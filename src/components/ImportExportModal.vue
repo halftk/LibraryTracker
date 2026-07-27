@@ -211,37 +211,116 @@
                     <span class="s-red">🔴 {{ notFoundCount }} no encontrados</span>
                     <span class="s-skip">⏭ {{ skippedCount }} omitidos</span>
                   </div>
-                  <button class="btn-next" :disabled="ambiguousCount > 0" @click="importStep = 2">
-                    {{ ambiguousCount > 0 ? `Resuelve ${ambiguousCount} pendientes` : 'Confirmar Importación →' }}
+                  <button class="btn-next" :disabled="ambiguousCount > 0 || checkingDuplicates" @click="goToConfirmStep">
+                    <span v-if="checkingDuplicates">Verificando duplicados…</span>
+                    <span v-else-if="ambiguousCount > 0">Resuelve {{ ambiguousCount }} pendientes</span>
+                    <span v-else>Confirmar Importación →</span>
                   </button>
                 </div>
               </div>
 
-              <!-- ── STEP 3: Confirm ── -->
+              <!-- ── STEP 3: Confirm & Conflict Resolution ── -->
               <div v-if="importStep === 2" class="step-content">
-                <div class="confirm-summary">
-                  <div class="confirm-stat primary">
-                    <span class="confirm-number">{{ toImportCount }}</span>
-                    <span class="confirm-label">Juegos a importar</span>
-                  </div>
-                  <div class="confirm-stat muted">
-                    <span class="confirm-number">{{ skippedCount + notFoundCount }}</span>
-                    <span class="confirm-label">Omitidos / No encontrados</span>
-                  </div>
-                </div>
 
+                <!-- Import Result (Success state) -->
                 <div v-if="importDone" class="import-result">
                   <div class="result-icon">🎉</div>
                   <h3>¡Importación completada!</h3>
-                  <p>Se han añadido <strong>{{ importedCount }}</strong> juegos a tu biblioteca.</p>
-                  <p v-if="skippedDuplicates > 0" class="result-note">{{ skippedDuplicates }} duplicados omitidos (ya existían).</p>
+                  <div class="result-stats">
+                    <p v-if="importedCount > 0">✨ <strong>{{ importedCount }}</strong> juegos nuevos añadidos.</p>
+                    <p v-if="updatedCount > 0">🔄 <strong>{{ updatedCount }}</strong> juegos existentes actualizados.</p>
+                    <p v-if="skippedDuplicates > 0" class="result-note">⏭ <strong>{{ skippedDuplicates }}</strong> duplicados omitidos por tu elección.</p>
+                  </div>
                   <button class="btn-next" @click="$emit('done')">Cerrar y actualizar →</button>
                 </div>
 
+                <!-- Pre-Import Confirmation & Conflicts -->
                 <div v-else>
+
+                  <!-- Stat Cards -->
+                  <div class="confirm-summary">
+                    <div class="confirm-stat primary">
+                      <span class="confirm-number">{{ newItemsCount }}</span>
+                      <span class="confirm-label">Nuevos juegos</span>
+                    </div>
+                    <div :class="['confirm-stat', duplicateCount > 0 ? 'warning' : 'muted']">
+                      <span class="confirm-number">{{ duplicateCount }}</span>
+                      <span class="confirm-label">Duplicados en tu biblioteca</span>
+                    </div>
+                    <div class="confirm-stat muted">
+                      <span class="confirm-number">{{ skippedCount + notFoundCount }}</span>
+                      <span class="confirm-label">Omitidos</span>
+                    </div>
+                  </div>
+
+                  <!-- Conflict Resolution Box (if duplicates exist) -->
+                  <div v-if="duplicateCount > 0" class="conflict-box">
+                    <div class="conflict-header">
+                      <span class="conflict-title">⚠️ Conflictos detectados ({{ duplicateCount }})</span>
+                      <span class="conflict-desc">Estos juegos ya existen en tu biblioteca para la misma plataforma.</span>
+                    </div>
+
+                    <!-- Global Bulk Controls -->
+                    <div class="conflict-bulk-actions">
+                      <span class="bulk-label">Acción global para duplicados:</span>
+                      <div class="bulk-buttons">
+                        <button
+                          :class="['bulk-btn', { active: globalConflictAction === 'skip' }]"
+                          @click="setGlobalConflictAction('skip')"
+                        >
+                          ⏭ Omitir todos
+                        </button>
+                        <button
+                          :class="['bulk-btn', { active: globalConflictAction === 'overwrite' }]"
+                          @click="setGlobalConflictAction('overwrite')"
+                        >
+                          🔄 Sobreescribir todos
+                        </button>
+                      </div>
+                    </div>
+
+                    <!-- Individual Conflict List -->
+                    <div class="conflict-list">
+                      <div
+                        v-for="item in duplicateMatches"
+                        :key="item.selected?.igdb_id + item.row.platform"
+                        class="conflict-item"
+                      >
+                        <div class="conflict-game-info">
+                          <img v-if="item.selected?.cover_url" :src="item.selected.cover_url" class="conflict-cover" />
+                          <div>
+                            <span class="conflict-name">{{ item.selected?.title }}</span>
+                            <span class="conflict-platform">({{ item.row.platform }})</span>
+                          </div>
+                        </div>
+
+                        <!-- Individual Action Selector -->
+                        <div class="conflict-item-action">
+                          <button
+                            :class="['action-chip', { active: item.conflictAction === 'skip' }]"
+                            @click="item.conflictAction = 'skip'"
+                          >
+                            Omitir
+                          </button>
+                          <button
+                            :class="['action-chip danger', { active: item.conflictAction === 'overwrite' }]"
+                            @click="item.conflictAction = 'overwrite'"
+                          >
+                            Sobreescribir
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
                   <div v-if="importError" class="error-banner">⚠️ {{ importError }}</div>
+
+                  <!-- Final Action Button -->
                   <button class="btn-next" @click="runImport" :disabled="importing">
-                    {{ importing ? `Importando… (${importedCount}/${toImportCount})` : `Importar ${toImportCount} juegos` }}
+                    <span v-if="importing">Importando… ({{ processedCount }}/{{ activeToImportCount }})</span>
+                    <span v-else>
+                      Confirmar Importación ({{ activeToImportCount }} juegos)
+                    </span>
                   </button>
                   <button class="btn-back" @click="importStep = 1">← Volver a revisar</button>
                 </div>
@@ -256,8 +335,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
-import { supabase, getLibraryItems, addLibraryItemToDB } from '../lib/supabase';
+import { ref, computed } from 'vue';
+import { supabase, getLibraryItems, addLibraryItemToDB, updateLibraryItemInDB } from '../lib/supabase';
 
 type GameStatus = 'Pendiente' | 'En curso' | 'Jugado' | 'Abandonado' | 'Prestado';
 
@@ -295,6 +374,9 @@ interface MatchEntry {
   selected: IGDBGame | null;
   skipped: boolean;
   retryQuery: string;
+  // Conflict / Duplicate detection
+  existingId?: string | null;
+  conflictAction?: 'overwrite' | 'skip';
 }
 
 // ── State ──────────────────────────────────────────
@@ -317,10 +399,18 @@ const parsedRows = ref<ParsedRow[]>([]);
 const matches = ref<MatchEntry[]>([]);
 const matchedCount = ref(0);
 const matchingDone = ref(false);
+const checkingDuplicates = ref(false);
+
+// Conflict resolution state
+const globalConflictAction = ref<'skip' | 'overwrite'>('skip');
+
+// Execution state
 const importing = ref(false);
 const importDone = ref(false);
 const importedCount = ref(0);
+const updatedCount = ref(0);
 const skippedDuplicates = ref(0);
+const processedCount = ref(0);
 const importError = ref('');
 
 // ── Computed ────────────────────────────────────────
@@ -331,7 +421,20 @@ const readyCount = computed(() => matches.value.filter(m => m.status === 'matche
 const ambiguousCount = computed(() => matches.value.filter(m => m.status === 'ambiguous' && !m.skipped).length);
 const notFoundCount = computed(() => matches.value.filter(m => m.status === 'not_found').length);
 const skippedCount = computed(() => matches.value.filter(m => m.skipped).length);
-const toImportCount = computed(() => matches.value.filter(m => m.selected && !m.skipped).length);
+
+// Matches that are selected and not manually skipped
+const validMatches = computed(() => matches.value.filter(m => m.selected && !m.skipped));
+
+// Duplicate matches
+const duplicateMatches = computed(() => validMatches.value.filter(m => !!m.existingId));
+
+const duplicateCount = computed(() => duplicateMatches.value.length);
+const newItemsCount = computed(() => validMatches.value.filter(m => !m.existingId).length);
+
+// Count of items that will actually be imported or updated
+const activeToImportCount = computed(() =>
+  validMatches.value.filter(m => !m.existingId || m.conflictAction === 'overwrite').length
+);
 
 // ── Helpers ──────────────────────────────────────────
 function switchTab(tab: 'export' | 'import') {
@@ -407,7 +510,6 @@ function parseCSV(text: string): ParsedRow[] {
   const lines = text.trim().split(/\r?\n/);
   if (lines.length < 2) throw new Error('El CSV debe tener al menos una fila de datos.');
 
-  // Detect delimiter
   const delimiters = [',', ';', '\t'];
   let delimiter = ',';
   let maxCols = 0;
@@ -509,7 +611,6 @@ async function startMatching() {
   matchingDone.value = false;
   matchedCount.value = 0;
 
-  // For JSON: mark all as already matched (has igdb_id)
   if (fileType.value === 'json') {
     matches.value = parsedRows.value.map(row => ({
       row,
@@ -531,11 +632,10 @@ async function startMatching() {
     }));
     matchedCount.value = matches.value.length;
     matchingDone.value = true;
-    importStep.value = 2;
+    await goToConfirmStep();
     return;
   }
 
-  // CSV: initialize all as pending
   matches.value = parsedRows.value.map(row => ({
     row,
     status: 'pending' as const,
@@ -545,7 +645,6 @@ async function startMatching() {
     retryQuery: row.title,
   }));
 
-  // Search IGDB for each, sequentially with 200ms delay
   for (let i = 0; i < matches.value.length; i++) {
     await searchForMatch(i, matches.value[i].row.title);
     matchedCount.value = i + 1;
@@ -565,7 +664,6 @@ async function searchForMatch(i: number, query: string) {
       return;
     }
 
-    // Check for confident match
     const top = results[0];
     const sim = titleSimilarity(query, top.title);
 
@@ -599,49 +697,109 @@ async function retryMatch(i: number) {
   await searchForMatch(i, q);
 }
 
-// ── Import ────────────────────────────────────────────
+// ── Duplicate Detection & Transition to Confirm Step ─
+async function goToConfirmStep() {
+  checkingDuplicates.value = true;
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const existingItems = await getLibraryItems(user.id);
+      // Map key: igdbId_platform (lowercase)
+      const map = new Map<string, string>();
+      existingItems.forEach(item => {
+        if (item.game?.igdb_id) {
+          const key = `${item.game.igdb_id}_${item.platform.toLowerCase().trim()}`;
+          map.set(key, item.id);
+        }
+      });
+
+      // Annotate each match entry with existingId and conflict action
+      matches.value.forEach(m => {
+        if (m.selected) {
+          const key = `${m.selected.igdb_id}_${m.row.platform.toLowerCase().trim()}`;
+          if (map.has(key)) {
+            m.existingId = map.get(key);
+            m.conflictAction = globalConflictAction.value;
+          } else {
+            m.existingId = null;
+          }
+        }
+      });
+    }
+  } catch (err) {
+    console.error('Error checking duplicates:', err);
+  } finally {
+    checkingDuplicates.value = false;
+    importStep.value = 2;
+  }
+}
+
+function setGlobalConflictAction(action: 'skip' | 'overwrite') {
+  globalConflictAction.value = action;
+  matches.value.forEach(m => {
+    if (m.existingId) {
+      m.conflictAction = action;
+    }
+  });
+}
+
+// ── Import Execution ──────────────────────────────────
 async function runImport() {
   importing.value = true;
   importError.value = '';
   importedCount.value = 0;
+  updatedCount.value = 0;
   skippedDuplicates.value = 0;
+  processedCount.value = 0;
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) { importError.value = 'Sesión expirada. Vuelve a iniciar sesión.'; importing.value = false; return; }
 
-  const toImport = matches.value.filter(m => m.selected && !m.skipped);
+  const toProcess = validMatches.value;
 
-  for (const m of toImport) {
-    try {
-      const game = m.selected!;
-      const gameSnapshot = {
-        id: game.igdb_id,
-        title: game.title,
-        cover_url: game.cover_url,
-        release_year: game.release_year,
-        genres: game.genres,
-        developers: game.developers,
-        steam_appid: game.steam_appid,
-      };
-      const itemData = {
-        platform: m.row.platform,
-        status: m.row.status,
-        start_date: null as string | null,
-        finish_date: m.row.finish_date,
-        playtime_hours: m.row.playtime_hours,
-        rating: m.row.rating,
-        lent_to: null as string | null,
-        notes: m.row.notes,
-      };
+  for (const m of toProcess) {
+    processedCount.value++;
+    const game = m.selected!;
+    const itemData = {
+      platform: m.row.platform,
+      status: m.row.status,
+      start_date: null as string | null,
+      finish_date: m.row.finish_date,
+      playtime_hours: m.row.playtime_hours,
+      rating: m.row.rating,
+      lent_to: null as string | null,
+      notes: m.row.notes,
+    };
 
-      await addLibraryItemToDB(user.id, gameSnapshot, itemData);
-      importedCount.value++;
-    } catch (err: any) {
-      // Unique conflict → skip duplicate silently
-      if (err?.code === '23505' || err?.message?.includes('unique')) {
+    if (m.existingId) {
+      if (m.conflictAction === 'overwrite') {
+        try {
+          await updateLibraryItemInDB(m.existingId, itemData);
+          updatedCount.value++;
+        } catch (err) {
+          console.error('Error updating library item:', err);
+        }
+      } else {
         skippedDuplicates.value++;
       }
-      // Ignore other individual errors and continue
+    } else {
+      try {
+        const gameSnapshot = {
+          id: game.igdb_id,
+          title: game.title,
+          cover_url: game.cover_url,
+          release_year: game.release_year,
+          genres: game.genres,
+          developers: game.developers,
+          steam_appid: game.steam_appid,
+        };
+        await addLibraryItemToDB(user.id, gameSnapshot, itemData);
+        importedCount.value++;
+      } catch (err: any) {
+        if (err?.code === '23505' || err?.message?.includes('unique')) {
+          skippedDuplicates.value++;
+        }
+      }
     }
   }
 
@@ -710,8 +868,8 @@ function today() {
 .ie-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(6px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -946,10 +1104,7 @@ function today() {
   font-size: 0.8rem;
   font-weight: 600;
 }
-.preview-type {
-  font-size: 0.8rem;
-  color: var(--color-text-muted);
-}
+.preview-type { font-size: 0.8rem; color: var(--color-text-muted); }
 
 .preview-table-wrap { overflow-x: auto; margin-bottom: 1rem; }
 .preview-table {
@@ -1066,34 +1221,188 @@ function today() {
 /* ── Confirm step ────────────────────────────────── */
 .confirm-summary {
   display: flex;
-  gap: 1.5rem;
-  margin-bottom: 1.5rem;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
 }
 .confirm-stat {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 1rem 1.5rem;
+  padding: 0.875rem 1rem;
   background: var(--color-bg-card);
   border-radius: 12px;
   border: 1px solid var(--color-border);
 }
 .confirm-stat.primary { border-color: var(--color-accent-primary); }
+.confirm-stat.warning { border-color: rgba(234, 179, 8, 0.4); background: rgba(234, 179, 8, 0.05); }
+.confirm-stat.warning .confirm-number { color: #eab308; }
 .confirm-number {
-  font-size: 2rem;
+  font-size: 1.75rem;
   font-weight: 800;
   color: var(--color-accent-primary);
 }
 .confirm-stat.muted .confirm-number { color: var(--color-text-muted); }
-.confirm-label { font-size: 0.75rem; color: var(--color-text-muted); }
+.confirm-label { font-size: 0.7rem; color: var(--color-text-muted); margin-top: 0.1rem; }
+
+/* ── Conflict Box ────────────────────────────────── */
+.conflict-box {
+  background: rgba(234, 179, 8, 0.04);
+  border: 1px solid rgba(234, 179, 8, 0.3);
+  border-radius: 14px;
+  padding: 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.conflict-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  margin-bottom: 1rem;
+}
+
+.conflict-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #eab308;
+}
+
+.conflict-desc {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.conflict-bulk-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: var(--color-bg-card);
+  border-radius: 10px;
+  margin-bottom: 1rem;
+  border: 1px solid var(--color-border);
+}
+
+.bulk-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.bulk-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.bulk-btn {
+  padding: 0.375rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-secondary);
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: var(--font-family-base);
+}
+
+.bulk-btn:hover {
+  color: var(--color-text-primary);
+}
+
+.bulk-btn.active {
+  background: var(--color-accent-primary);
+  border-color: var(--color-accent-primary);
+  color: white;
+}
+
+.conflict-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 25vh;
+  overflow-y: auto;
+}
+
+.conflict-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  background: var(--color-bg-card);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.conflict-game-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.conflict-cover {
+  width: 24px;
+  height: 32px;
+  object-fit: cover;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.conflict-name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.conflict-platform {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  margin-left: 0.3rem;
+}
+
+.conflict-item-action {
+  display: flex;
+  gap: 0.375rem;
+  flex-shrink: 0;
+}
+
+.action-chip {
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  border: 1px solid var(--color-border);
+  background: none;
+  color: var(--color-text-muted);
+  font-size: 0.7rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: var(--font-family-base);
+}
+
+.action-chip.active {
+  background: var(--color-accent-primary);
+  border-color: var(--color-accent-primary);
+  color: white;
+}
+
+.action-chip.danger.active {
+  background: var(--color-accent-rose);
+  border-color: var(--color-accent-rose);
+  color: white;
+}
 
 /* ── Import result ───────────────────────────────── */
 .import-result {
   text-align: center;
-  padding: 2rem;
+  padding: 2rem 1rem;
 }
 .result-icon { font-size: 3rem; margin-bottom: 0.75rem; }
-.import-result h3 { font-size: 1.2rem; font-weight: 800; margin: 0 0 0.5rem 0; }
-.import-result p { color: var(--color-text-secondary); margin: 0 0 0.375rem 0; }
+.import-result h3 { font-size: 1.2rem; font-weight: 800; margin: 0 0 0.75rem 0; }
+.result-stats { display: flex; flex-direction: column; gap: 0.375rem; margin-bottom: 1.25rem; font-size: 0.9rem; }
+.result-stats p { margin: 0; color: var(--color-text-secondary); }
 .result-note { font-size: 0.8rem; color: var(--color-text-muted) !important; }
 
 /* ── Buttons ─────────────────────────────────────── */
@@ -1162,5 +1471,6 @@ function today() {
   .match-row { flex-wrap: wrap; }
   .match-controls { width: 100%; flex-direction: row; flex-wrap: wrap; }
   .confirm-summary { flex-direction: column; }
+  .conflict-bulk-actions { flex-direction: column; align-items: flex-start; }
 }
 </style>
