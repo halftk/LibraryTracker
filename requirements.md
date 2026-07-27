@@ -11,6 +11,7 @@
 - **Búsqueda e Integración con IGDB**: Integración con la API de [IGDB](https://www.igdb.com/) para buscar videojuegos al vuelo y obtener metadatos ricos (título, portada, año de lanzamiento, géneros, desarrolladores, etc.).
 - **Almacenamiento Híbrido de Datos**: Los metadatos del juego se obtienen de IGDB y se guardan como instantánea (*snapshot*) en la biblioteca del usuario junto con sus datos y métricas personales.
 - **Modelo Juego + Plataforma**: Un mismo juego puede estar registrado múltiples veces si se juega en plataformas distintas (cada entrada es la combinación única `[Juego + Plataforma]`).
+- **Importación y Exportación de Datos**: Opción para exportar e importar la biblioteca completa del usuario en formatos estándar (**JSON / CSV**).
 - **Interfaz Moderna y Atractiva**: Experiencia de usuario (UX/UI) cuidada, rápida y limpia con soporte para tema claro/oscuro.
 
 ---
@@ -88,6 +89,8 @@ La aplicación calculará y mostrará estadísticas en tiempo real sobre la bibl
   - **Client ID**: Configurado mediante variable de entorno `TWITCH_CLIENT_ID`.
   - **Client Secret**: Configurado mediante variable de entorno `TWITCH_CLIENT_SECRET`.
   - *Proxy Endpoint*: Endpoints SSR en Astro (`/api/igdb/search`, `/api/igdb/game/[id]`) que gestionan la obtención automática del token OAuth de Twitch y sirven los resultados de forma segura sin exponer credenciales al cliente.
+- **Respaldo Automático (Backups Nocturnos)**:
+  - Programación de respaldos nocturnos automáticos de la base de datos PostgreSQL (mediante Supabase Scheduled Backups o GitHub Actions / Cron Job) para protección de datos y recuperación ante desastres.
 
 ---
 
@@ -99,13 +102,13 @@ La aplicación calculará y mostrará estadísticas en tiempo real sobre la bibl
 - Gestión de biblioteca de usuario con persistencia en Supabase (o base de datos elegida).
 - Panel de Estadísticas con gráficos interactivos.
 
-### Fase 2: Autenticación Social (Google & Microsoft)
+### Fase 2: Autenticación Social & Importación/Exportación
 - Inicio de sesión con proveedores de identidad Google OAuth y Microsoft OAuth vía Supabase Auth.
+- **Importación y Exportación**: Funcionalidad para descargar la biblioteca en JSON/CSV e importar archivos previamente guardados.
 - Gestión de usuarios y perfiles públicos / compartibles de bibliotecas.
+- **Backups Nocturnos**: Automatización de copias de seguridad nocturnas de la base de datos de Supabase.
 
 ### Fase 3: Integración con Steam (Vinculación de Biblioteca)
 - Login con Steam (OpenID).
 - Consulta de juegos poseídos mediante Steam Web API (`IPlayerService/GetOwnedGames`).
 - Cruce automático de datos: IGDB contiene mapeos de `steam_appid` en su tabla/endpoint `external_games` (`category = 1`), lo que permite vincular e importar automáticamente la biblioteca de Steam hacia LibraryTracker con sus horas jugadas.
-
-
