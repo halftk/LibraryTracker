@@ -210,6 +210,16 @@ onMounted(() => {
   font-size: 0.875rem;
   font-weight: 600;
   color: var(--color-text-primary);
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .user-name {
+    display: none;
+  }
 }
 
 .btn-logout {

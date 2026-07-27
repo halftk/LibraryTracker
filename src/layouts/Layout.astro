@@ -22,40 +22,119 @@ const { title = 'LibraryTracker', description = 'Gestiona tu biblioteca de video
   </head>
   <body>
     <!-- Header / Navbar -->
-    <header class="glass" style="position: sticky; top: 0; z-index: 50; border-bottom: 1px solid var(--color-border);">
-      <nav style="max-width: 1400px; margin: 0 auto; padding: 0.75rem 1.5rem; display: flex; align-items: center; justify-content: space-between;">
-        <!-- Logo -->
-        <a href="/" style="display: flex; align-items: center; gap: 0.5rem; text-decoration: none; color: var(--color-text-primary);">
-          <span style="font-size: 1.5rem;">🎮</span>
-          <span style="font-size: 1.25rem; font-weight: 800; background: linear-gradient(135deg, var(--color-accent-primary), var(--color-accent-cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
-            LibraryTracker
-          </span>
+    <header class="glass site-header">
+      <nav class="nav-inner">
+        <!-- Logo: solo icono en móvil, icono+nombre en desktop -->
+        <a href="/" class="nav-logo">
+          <span class="nav-logo-icon">🎮</span>
+          <span class="nav-logo-text">LibraryTracker</span>
         </a>
 
-        <!-- Nav links + Auth -->
-        <div style="display: flex; align-items: center; gap: 1.5rem;">
-          <a href="/" class="nav-link" style="color: var(--color-text-secondary); text-decoration: none; font-size: 0.875rem; font-weight: 500; transition: color 0.2s ease;">
-            Biblioteca
-          </a>
+        <!-- Sólo UserMenu (avatar + logout) -->
+        <div class="nav-right">
           <UserMenu client:only="vue" />
         </div>
       </nav>
     </header>
 
     <!-- Main Content -->
-    <main style="max-width: 1400px; margin: 0 auto; padding: 2rem 1.5rem;">
+    <main class="site-main">
       <slot />
     </main>
 
     <!-- Footer -->
-    <footer style="border-top: 1px solid var(--color-border); padding: 1.5rem; text-align: center; color: var(--color-text-muted); font-size: 0.75rem;">
+    <footer class="site-footer">
       LibraryTracker &copy; {new Date().getFullYear()} — Powered by IGDB
     </footer>
 
     <style>
-      .nav-link:hover {
-        color: var(--color-accent-primary) !important;
+      /* ─── Header ───────────────────────────────── */
+      .site-header {
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        border-bottom: 1px solid var(--color-border);
       }
+
+      .nav-inner {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 0.75rem 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+      }
+
+      /* ─── Logo ─────────────────────────────────── */
+      .nav-logo {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        text-decoration: none;
+        color: var(--color-text-primary);
+        flex-shrink: 0;
+      }
+
+      .nav-logo-icon {
+        font-size: 1.4rem;
+        line-height: 1;
+      }
+
+      .nav-logo-text {
+        font-size: 1.2rem;
+        font-weight: 800;
+        background: linear-gradient(135deg, var(--color-accent-primary), var(--color-accent-cyan));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        white-space: nowrap;
+      }
+
+      /* ─── Right side ────────────────────────────── */
+      .nav-right {
+        display: flex;
+        align-items: center;
+        flex-shrink: 0;
+      }
+
+      /* ─── Main & Footer ─────────────────────────── */
+      .site-main {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 2rem 1.5rem;
+      }
+
+      .site-footer {
+        border-top: 1px solid var(--color-border);
+        padding: 1.5rem;
+        text-align: center;
+        color: var(--color-text-muted);
+        font-size: 0.75rem;
+      }
+
+      /* ─── FIX: astro-island es display:block por defecto y rompe el flex ─── */
+      astro-island {
+        display: flex;
+        align-items: center;
+      }
+
+      /* ─── Responsive: móvil ──────────────────────── */
+      @media (max-width: 640px) {
+        .nav-inner {
+          padding: 0.6rem 1rem;
+        }
+
+        /* Ocultar el nombre de la app en móvil */
+        .nav-logo-text {
+          display: none;
+        }
+
+        .site-main {
+          padding: 1.25rem 1.25rem;
+        }
+      }
+
     </style>
   </body>
 </html>
