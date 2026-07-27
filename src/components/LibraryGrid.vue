@@ -75,6 +75,12 @@
 
         <!-- Actions -->
         <div class="card-actions">
+          <button class="action-btn edit-btn" title="Editar" @click="openEdit(item)">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            </svg>
+          </button>
           <button class="action-btn delete-btn" title="Eliminar" @click="deleteItem(item.id)">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
@@ -91,6 +97,15 @@
       <p v-if="activeFilter === 'all'">Usa el buscador de arriba para encontrar y añadir videojuegos.</p>
       <p v-else>No tienes juegos con estado "{{ activeFilter }}".</p>
     </div>
+
+    <!-- Edit Modal -->
+    <AddGameModal
+      v-if="editingItem"
+      :game="editingItem.game"
+      :existing-item="editingItem"
+      @close="editingItem = null"
+      @updated="handleUpdated"
+    />
   </div>
 </template>
 
@@ -98,6 +113,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { supabase, getLibraryItems, deleteLibraryItemFromDB } from '../lib/supabase';
 import type { User } from '@supabase/supabase-js';
+import AddGameModal from './AddGameModal.vue';
 
 interface LibraryItem {
   id: string;
@@ -127,6 +143,7 @@ const localSearch = ref('');
 const sortBy = ref('recent');
 const currentUser = ref<User | null>(null);
 const loading = ref(true);
+const editingItem = ref<any>(null);
 
 const statusTabs = [
   { value: 'all', label: 'Todos', icon: '📚' },
@@ -253,6 +270,22 @@ async function deleteItem(id: string) {
   } catch (err) {
     console.error('Error deleting item:', err);
   }
+}
+
+function openEdit(item: LibraryItem) {
+  editingItem.value = {
+    ...item,
+    game: {
+      ...item.game,
+      platforms: [item.platform],
+      summary: null,
+    },
+  };
+}
+
+function handleUpdated() {
+  editingItem.value = null;
+  loadItems();
 }
 
 // Public method: called from parent when a game is added
@@ -445,6 +478,8 @@ onMounted(() => {
   position: absolute;
   top: 0.5rem;
   right: 0.5rem;
+  display: flex;
+  gap: 0.375rem;
   opacity: 0;
   transition: opacity 0.2s ease;
 }
@@ -464,11 +499,18 @@ onMounted(() => {
   transition: all 0.2s ease;
 }
 
+.edit-btn:hover {
+  background: rgba(124, 58, 237, 0.3);
+  border-color: var(--color-accent-primary);
+  color: var(--color-accent-primary);
+}
+
 .delete-btn:hover {
   background: rgba(244, 63, 94, 0.3);
   border-color: var(--color-accent-rose);
   color: var(--color-accent-rose);
 }
+
 
 .empty-state {
   text-align: center;

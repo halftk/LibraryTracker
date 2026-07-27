@@ -137,3 +137,36 @@ export async function deleteLibraryItemFromDB(id: string) {
 
   if (error) throw error;
 }
+
+/**
+ * Actualiza los campos editables de un library_item existente
+ */
+export async function updateLibraryItemInDB(
+  id: string,
+  itemData: {
+    platform: string;
+    status: 'Pendiente' | 'En curso' | 'Jugado' | 'Abandonado' | 'Prestado';
+    start_date: string | null;
+    finish_date: string | null;
+    playtime_hours: number;
+    rating: number | null;
+    notes: string | null;
+    lent_to: string | null;
+  }
+) {
+  const { data, error } = await supabase
+    .from('library_items')
+    .update({
+      ...itemData,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', id)
+    .select(`
+      *,
+      game:games (*)
+    `)
+    .single();
+
+  if (error) throw error;
+  return data;
+}

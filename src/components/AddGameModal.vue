@@ -14,7 +14,7 @@
               />
               <div v-else class="modal-cover-placeholder">🎮</div>
               <div class="modal-game-info">
-                <h2 class="modal-title">{{ game.title }}</h2>
+                <h2 class="modal-title">{{ isEditMode ? 'Editar entrada' : game.title }}</h2>
                 <p class="modal-meta">
                   <span v-if="game.release_year">{{ game.release_year }}</span>
                   <span v-if="game.developers.length"> · {{ game.developers.join(', ') }}</span>
@@ -142,7 +142,7 @@
             <div class="modal-actions">
               <button type="button" class="btn-secondary" @click="$emit('close')">Cancelar</button>
               <button type="submit" class="btn-primary" :disabled="saving">
-                {{ saving ? 'Guardando...' : 'Añadir a Biblioteca' }}
+                {{ saving ? 'Guardando...' : (isEditMode ? 'Guardar Cambios' : 'Añadir a Biblioteca') }}
               </button>
             </div>
           </form>
@@ -154,7 +154,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue';
-import { supabase, addLibraryItemToDB } from '../lib/supabase';
+import { supabase, addLibraryItemToDB, updateLibraryItemInDB } from '../lib/supabase';
 import type { User } from '@supabase/supabase-js';
 
 interface IGDBGame {
@@ -171,11 +171,26 @@ interface IGDBGame {
 
 type GameStatus = 'Pendiente' | 'En curso' | 'Jugado' | 'Abandonado' | 'Prestado';
 
-const props = defineProps<{ game: IGDBGame }>();
+interface ExistingItem {
+  id: string;
+  platform: string;
+  status: GameStatus;
+  start_date: string | null;
+  finish_date: string | null;
+  playtime_hours: number;
+  rating: number | null;
+  notes: string | null;
+  lent_to: string | null;
+}
+
+const props = defineProps<{ game: IGDBGame; existingItem?: ExistingItem | null }>();
 const emit = defineEmits<{
   (e: 'close'): void;
   (e: 'added', item: unknown): void;
+  (e: 'updated', item: unknown): void;
 }>();
+
+const isEditMode = computed(() => !!props.existingItem);
 
 const statuses = [
   { value: 'Pendiente' as GameStatus, label: 'Pendiente', icon: '⏳', css: 'pendiente' },
@@ -211,6 +226,19 @@ const currentUser = ref<User | null>(null);
 onMounted(async () => {
   const { data } = await supabase.auth.getUser();
   currentUser.value = data.user;
+
+  // Pre-rellenar formulario en modo edición
+  if (props.existingItem) {
+    const e = props.existingItem;
+    form.value.platform = e.platform;
+    form.value.status = e.status;
+    form.value.startDate = e.start_date || '';
+    form.value.finishDate = e.finish_date || '';
+    form.value.playtimeHours = e.playtime_hours;
+    form.value.rating = e.rating || 0;
+    form.value.lentTo = e.lent_to || '';
+    form.value.notes = e.notes || '';
+  }
 });
 
 // Clear validation on form changes
@@ -248,16 +276,6 @@ async function handleSubmit() {
 
   saving.value = true;
 
-  const gameSnapshot = {
-    id: props.game.igdb_id,
-    title: props.game.title,
-    cover_url: props.game.cover_url,
-    release_year: props.game.release_year,
-    genres: props.game.genres,
-    developers: props.game.developers,
-    steam_appid: props.game.steam_appid,
-  };
-
   const itemData = {
     platform: form.value.platform,
     status: form.value.status,
@@ -270,12 +288,34 @@ async function handleSubmit() {
   };
 
   try {
-    if (currentUser.value) {
-      // ── Usuario autenticado: guardar en Supabase ──────────────────────────
+    if (isEditMode.value && props.existingItem) {
+      // ── Modo edición: actualizar en Supabase ──────────────────────────────
+      const updated = await updateLibraryItemInDB(props.existingItem.id, itemData);
+      emit('updated', updated);
+    } else if (currentUser.value) {
+      // ── Modo añadir con sesión: guardar en Supabase ───────────────────────
+      const gameSnapshot = {
+        id: props.game.igdb_id,
+        title: props.game.title,
+        cover_url: props.game.cover_url,
+        release_year: props.game.release_year,
+        genres: props.game.genres,
+        developers: props.game.developers,
+        steam_appid: props.game.steam_appid,
+      };
       const saved = await addLibraryItemToDB(currentUser.value.id, gameSnapshot, itemData);
       emit('added', saved);
     } else {
-      // ── Sin sesión: guardar en localStorage como fallback ─────────────────
+      // ── Sin sesión: localStorage fallback ────────────────────────────────
+      const gameSnapshot = {
+        id: props.game.igdb_id,
+        title: props.game.title,
+        cover_url: props.game.cover_url,
+        release_year: props.game.release_year,
+        genres: props.game.genres,
+        developers: props.game.developers,
+        steam_appid: props.game.steam_appid,
+      };
       const localItem = {
         ...itemData,
         id: crypto.randomUUID(),
