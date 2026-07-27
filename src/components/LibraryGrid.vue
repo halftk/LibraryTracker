@@ -95,6 +95,8 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
+import { supabase, getLibraryItems, deleteLibraryItemFromDB } from '../lib/supabase';
+import type { User } from '@supabase/supabase-js';
 
 interface LibraryItem {
   id: string;
@@ -122,6 +124,8 @@ const items = ref<LibraryItem[]>([]);
 const activeFilter = ref('all');
 const localSearch = ref('');
 const sortBy = ref('recent');
+const currentUser = ref<User | null>(null);
+const loading = ref(true);
 
 const statusTabs = [
   { value: 'all', label: 'Todos', icon: '📚' },
@@ -182,18 +186,61 @@ const filteredItems = computed(() => {
   return result;
 });
 
-function loadItems() {
+async function loadItems() {
+  loading.value = true;
   try {
-    const stored = JSON.parse(localStorage.getItem('libraryItems') || '[]');
-    items.value = stored;
-  } catch {
+    const { data: { user } } = await supabase.auth.getUser();
+    currentUser.value = user;
+
+    if (user) {
+      // ── Usuario autenticado: cargar desde Supabase ──────────────────────
+      const dbItems = await getLibraryItems(user.id);
+      items.value = dbItems.map(i => ({
+        id: i.id,
+        game: {
+          igdb_id: i.game!.id,
+          title: i.game!.title,
+          cover_url: i.game!.cover_url,
+          release_year: i.game!.release_year,
+          genres: i.game!.genres,
+          developers: i.game!.developers,
+          steam_appid: i.game!.steam_appid,
+        },
+        platform: i.platform,
+        status: i.status,
+        start_date: i.start_date,
+        finish_date: i.finish_date,
+        playtime_hours: i.playtime_hours,
+        rating: i.rating,
+        lent_to: i.lent_to,
+        notes: i.notes,
+        created_at: i.created_at,
+      }));
+    } else {
+      // ── Sin sesión: cargar desde localStorage ───────────────────────────
+      const stored = JSON.parse(localStorage.getItem('libraryItems') || '[]');
+      items.value = stored;
+    }
+  } catch (err) {
+    console.error('Error loading library:', err);
     items.value = [];
+  } finally {
+    loading.value = false;
   }
 }
 
-function deleteItem(id: string) {
-  items.value = items.value.filter(i => i.id !== id);
-  localStorage.setItem('libraryItems', JSON.stringify(items.value));
+async function deleteItem(id: string) {
+  try {
+    if (currentUser.value) {
+      await deleteLibraryItemFromDB(id);
+    } else {
+      const updated = items.value.filter(i => i.id !== id);
+      localStorage.setItem('libraryItems', JSON.stringify(updated));
+    }
+    items.value = items.value.filter(i => i.id !== id);
+  } catch (err) {
+    console.error('Error deleting item:', err);
+  }
 }
 
 // Public method: called from parent when a game is added

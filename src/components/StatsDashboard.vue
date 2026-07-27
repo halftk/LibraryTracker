@@ -106,6 +106,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
+import { supabase, getLibraryItems } from '../lib/supabase';
 
 interface LibraryItem {
   id: string;
@@ -186,10 +187,37 @@ const genreCounts = computed(() => {
 
 const maxGenreCount = computed(() => Math.max(...Object.values(genreCounts.value), 1));
 
-function loadItems() {
+async function loadItems() {
   try {
-    items.value = JSON.parse(localStorage.getItem('libraryItems') || '[]');
-  } catch {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const dbItems = await getLibraryItems(user.id);
+      items.value = dbItems.map(i => ({
+        id: i.id,
+        game: {
+          igdb_id: i.game!.id,
+          title: i.game!.title,
+          cover_url: i.game!.cover_url,
+          release_year: i.game!.release_year,
+          genres: i.game!.genres,
+          developers: i.game!.developers,
+          steam_appid: i.game!.steam_appid,
+        },
+        platform: i.platform,
+        status: i.status,
+        start_date: i.start_date,
+        finish_date: i.finish_date,
+        playtime_hours: i.playtime_hours,
+        rating: i.rating,
+        lent_to: i.lent_to,
+        notes: i.notes,
+        created_at: i.created_at,
+      }));
+    } else {
+      items.value = JSON.parse(localStorage.getItem('libraryItems') || '[]');
+    }
+  } catch (err) {
+    console.error('Error loading stats:', err);
     items.value = [];
   }
 }

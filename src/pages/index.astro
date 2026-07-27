@@ -21,7 +21,7 @@ import StatsDashboard from '../components/StatsDashboard.vue';
 
     <!-- Search -->
     <div class="search-wrapper">
-      <GameSearch client:load id="game-search" />
+      <GameSearch client:only="vue" id="game-search" />
     </div>
   </section>
 
@@ -29,7 +29,7 @@ import StatsDashboard from '../components/StatsDashboard.vue';
 
   <!-- Stats Section -->
   <section class="section">
-    <StatsDashboard client:load id="stats-dashboard" />
+    <StatsDashboard client:only="vue" id="stats-dashboard" />
   </section>
 
   <div class="divider"></div>
@@ -39,7 +39,7 @@ import StatsDashboard from '../components/StatsDashboard.vue';
     <h2 class="section-title">
       <span>📚</span> Mi Biblioteca
     </h2>
-    <LibraryGrid client:load id="library-grid" />
+    <LibraryGrid client:only="vue" id="library-grid" />
   </section>
 
 </Layout>

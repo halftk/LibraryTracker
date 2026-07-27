@@ -153,7 +153,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
+import { supabase, addLibraryItemToDB } from '../lib/supabase';
+import type { User } from '@supabase/supabase-js';
 
 interface IGDBGame {
   igdb_id: number;
@@ -204,6 +206,12 @@ const form = ref({
 
 const saving = ref(false);
 const validationError = ref('');
+const currentUser = ref<User | null>(null);
+
+onMounted(async () => {
+  const { data } = await supabase.auth.getUser();
+  currentUser.value = data.user;
+});
 
 // Clear validation on form changes
 watch(form, () => {
@@ -240,16 +248,17 @@ async function handleSubmit() {
 
   saving.value = true;
 
-  const libraryItem = {
-    game: {
-      igdb_id: props.game.igdb_id,
-      title: props.game.title,
-      cover_url: props.game.cover_url,
-      release_year: props.game.release_year,
-      genres: props.game.genres,
-      developers: props.game.developers,
-      steam_appid: props.game.steam_appid,
-    },
+  const gameSnapshot = {
+    id: props.game.igdb_id,
+    title: props.game.title,
+    cover_url: props.game.cover_url,
+    release_year: props.game.release_year,
+    genres: props.game.genres,
+    developers: props.game.developers,
+    steam_appid: props.game.steam_appid,
+  };
+
+  const itemData = {
     platform: form.value.platform,
     status: form.value.status,
     start_date: form.value.startDate || null,
@@ -260,16 +269,32 @@ async function handleSubmit() {
     notes: form.value.notes || null,
   };
 
-  // TODO: Save to Supabase when connected
-  // For now, emit and save to localStorage
   try {
-    const existing = JSON.parse(localStorage.getItem('libraryItems') || '[]');
-    existing.push({ ...libraryItem, id: crypto.randomUUID(), created_at: new Date().toISOString() });
-    localStorage.setItem('libraryItems', JSON.stringify(existing));
-    emit('added', libraryItem);
-  } catch (err) {
+    if (currentUser.value) {
+      // ── Usuario autenticado: guardar en Supabase ──────────────────────────
+      const saved = await addLibraryItemToDB(currentUser.value.id, gameSnapshot, itemData);
+      emit('added', saved);
+    } else {
+      // ── Sin sesión: guardar en localStorage como fallback ─────────────────
+      const localItem = {
+        ...itemData,
+        id: crypto.randomUUID(),
+        game: { ...gameSnapshot, igdb_id: gameSnapshot.id },
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+      const existing = JSON.parse(localStorage.getItem('libraryItems') || '[]');
+      existing.push(localItem);
+      localStorage.setItem('libraryItems', JSON.stringify(existing));
+      emit('added', localItem);
+    }
+  } catch (err: any) {
     console.error('Error saving:', err);
-    validationError.value = 'Error al guardar. Intenta de nuevo.';
+    if (err?.message?.includes('unique') || err?.code === '23505') {
+      validationError.value = `Ya tienes "${props.game.title}" en ${form.value.platform} en tu biblioteca.`;
+    } else {
+      validationError.value = err?.message || 'Error al guardar. Intenta de nuevo.';
+    }
   } finally {
     saving.value = false;
   }

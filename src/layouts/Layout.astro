@@ -1,5 +1,6 @@
 ---
 import '../styles/global.css';
+import UserMenu from '../components/UserMenu.vue';
 
 interface Props {
   title?: string;
@@ -31,14 +32,12 @@ const { title = 'LibraryTracker', description = 'Gestiona tu biblioteca de video
           </span>
         </a>
 
-        <!-- Nav links -->
-        <div style="display: flex; align-items: center; gap: 1rem;">
+        <!-- Nav links + Auth -->
+        <div style="display: flex; align-items: center; gap: 1.5rem;">
           <a href="/" class="nav-link" style="color: var(--color-text-secondary); text-decoration: none; font-size: 0.875rem; font-weight: 500; transition: color 0.2s ease;">
             Biblioteca
           </a>
-          <a href="/stats" class="nav-link" style="color: var(--color-text-secondary); text-decoration: none; font-size: 0.875rem; font-weight: 500; transition: color 0.2s ease;">
-            Estadísticas
-          </a>
+          <UserMenu client:only="vue" />
         </div>
       </nav>
     </header>
