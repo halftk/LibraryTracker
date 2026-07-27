@@ -94,21 +94,69 @@ La aplicación calculará y mostrará estadísticas en tiempo real sobre la bibl
 
 ---
 
-## 6. 🚀 Hoja de Ruta y Futuras Mejoras
+## 6. 📥📤 Importación y Exportación de Datos
 
-### Fase 1: MVP (Producto Mínimo Viable)
-- Proyecto en Astro con Tailwind CSS / Vanilla CSS y componentes interactivos.
+### 6.1 Formatos Soportados
+
+#### Formato A: CSV (para importar desde Excel u hojas de cálculo)
+Columnas soportadas al importar un CSV:
+
+| Columna | Obligatorio | Valor por defecto | Notas |
+| :--- | :--- | :--- | :--- |
+| `Titulo` o `Nombre` | **Sí** | — | Se usa para buscar en IGDB |
+| `Plataforma` | No | `PC` | Texto libre: PC, PS5, Switch, etc. |
+| `Fecha Fin` | No | null | Formatos: YYYY-MM-DD o DD/MM/YYYY |
+| `Estado` | No | `Jugado` si hay fecha fin, sino `Pendiente` | Pendiente / En curso / Jugado / Abandonado / Prestado |
+| `Puntuacion` | No | null | Número de 0 a 5 |
+| `Horas` | No | 0 | Número entero o decimal |
+| `Notas` | No | null | Texto libre |
+
+#### Formato B: JSON nativo (backup completo de LibraryTracker)
+Al exportar en JSON, se guardan todos los campos incluyendo `igdb_id`, `cover_url`, `genres`, `developers`, etc. Al re-importar JSON, no es necesario hacer matching con IGDB, ya que los datos están completos.
+
+### 6.2 Flujo de Importación CSV (3 Pasos)
+
+**Paso 1 — Subida de Archivo**
+- El usuario arrastra o selecciona un archivo `.csv` o `.json`.
+- El sistema parsea el archivo y muestra cuántas filas/entradas se detectaron.
+- Se muestran las columnas detectadas para confirmación.
+
+**Paso 2 — Matching con IGDB (Revisión y Corrección)**
+- Para cada fila del CSV, se lanza automáticamente una búsqueda en la API de IGDB.
+- Cada resultado tiene uno de estos estados visuales:
+  - 🟢 **Coincidencia Exacta**: Alta confianza — se asigna automáticamente (muestra portada y año para confirmar).
+  - 🟡 **Múltiples Opciones**: Se muestra un desplegable para que el usuario elija el correcto (ej: *God of War 2005* vs *God of War 2018*).
+  - 🔴 **No Encontrado**: El usuario puede corregir el título manualmente o omitir la fila.
+- El usuario puede revisar y ajustar todos los matchings antes de importar.
+
+**Paso 3 — Confirmación e Importación**
+- Se muestra un resumen: X juegos listos para importar, Y omitidos.
+- Al pulsar **"Confirmar e Importar"**, se insertan en bloque en Supabase.
+- Si un juego ya existe en la misma plataforma (conflicto de unicidad), se ofrece la opción de **Omitir** o **Actualizar** el registro existente.
+
+### 6.3 Exportación
+- **Exportar JSON**: Descarga un archivo `librarytracker-backup-YYYY-MM-DD.json` con todos los datos completos del usuario.
+- **Exportar CSV**: Descarga un archivo `librarytracker-YYYY-MM-DD.csv` con las columnas legibles por Excel/Sheets.
+
+---
+
+## 7. 🚀 Hoja de Ruta y Futuras Mejoras
+
+### Fase 1: MVP (Producto Mínimo Viable) ✅
+- Proyecto en Astro con Vanilla CSS y componentes Vue interactivos.
 - Buscador interactivo de juegos consumiendo IGDB mediante API SSR en Astro.
-- Gestión de biblioteca de usuario con persistencia en Supabase (o base de datos elegida).
-- Panel de Estadísticas con gráficos interactivos.
+- Gestión de biblioteca de usuario con persistencia en Supabase.
+- Panel de Estadísticas con métricas básicas.
 
-### Fase 2: Autenticación Social & Importación/Exportación
-- Inicio de sesión con proveedores de identidad Google OAuth y Microsoft OAuth vía Supabase Auth.
-- **Importación y Exportación**: Funcionalidad para descargar la biblioteca en JSON/CSV e importar archivos previamente guardados.
-- Gestión de usuarios y perfiles públicos / compartibles de bibliotecas.
-- **Backups Nocturnos**: Automatización de copias de seguridad nocturnas de la base de datos de Supabase.
+### Fase 2: Importación/Exportación & Backups ✅ (En progreso)
+- **Importación y Exportación CSV/JSON**: Flujo en 3 pasos con matching asistido contra IGDB.
+- **Backups Nocturnos Automáticos**: GitHub Actions ejecuta `pg_dump` cada noche a las 03:00 AM UTC y guarda el artefacto en GitHub por 30 días.
 
-### Fase 3: Integración con Steam (Vinculación de Biblioteca)
+### Fase 3: Autenticación Social
+- Inicio de sesión con Google OAuth y Microsoft OAuth vía Supabase Auth.
+- Gestión de perfiles públicos / compartibles de bibliotecas.
+
+### Fase 4: Integración con Steam (Vinculación de Biblioteca)
 - Login con Steam (OpenID).
 - Consulta de juegos poseídos mediante Steam Web API (`IPlayerService/GetOwnedGames`).
-- Cruce automático de datos: IGDB contiene mapeos de `steam_appid` en su tabla/endpoint `external_games` (`category = 1`), lo que permite vincular e importar automáticamente la biblioteca de Steam hacia LibraryTracker con sus horas jugadas.
+- Cruce automático de datos con `igdb_id` → `steam_appid` para importar horas jugadas.
