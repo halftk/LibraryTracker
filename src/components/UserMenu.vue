@@ -26,7 +26,7 @@
           <div class="dropdown-divider"></div>
 
           <!-- Acciones -->
-          <button class="dropdown-item" @click="menuOpen = false">
+          <button class="dropdown-item" @click="menuOpen = false; showImportExport = true">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
               <polyline points="17 8 12 3 7 8"/>
@@ -122,6 +122,13 @@
       </Transition>
 
     </Teleport>
+
+    <!-- Import/Export Modal -->
+    <ImportExportModal
+      v-if="showImportExport"
+      @close="showImportExport = false"
+      @done="showImportExport = false; $emit('library-updated')"
+    />
   </div>
 </template>
 
@@ -129,9 +136,11 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { supabase } from '../lib/supabase';
 import type { User } from '@supabase/supabase-js';
+import ImportExportModal from './ImportExportModal.vue';
 
 const user = ref<User | null>(null);
 const showModal = ref(false);
+const showImportExport = ref(false);
 const isLogin = ref(true);
 const loading = ref(false);
 const errorMsg = ref('');
