@@ -250,3 +250,13 @@ body {
   animation: shimmer 1.5s infinite;
   border-radius: 8px;
 }
+
+/* ── Ocultar header/footer en la landing (sin sesión) ── */
+body.hide-header header,
+body.hide-header footer {
+  display: none !important;
+}
+
+body.hide-header main {
+  padding: 0 !important;
+}
