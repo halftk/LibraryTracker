@@ -184,44 +184,48 @@ body {
 .badge {
   display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
-  padding: 0.25rem 0.75rem;
-  border-radius: 9999px;
-  font-size: 0.75rem;
-  font-weight: 600;
+  gap: 0.35rem;
+  padding: 0.3rem 0.65rem;
+  border-radius: 8px;
+  font-size: 0.7rem;
+  font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.7);
 }
 
 .badge-pendiente {
-  background: rgba(245, 158, 11, 0.15);
-  color: var(--color-accent-amber);
-  border: 1px solid rgba(245, 158, 11, 0.3);
+  background: rgba(15, 12, 5, 0.92);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.6);
 }
 
 .badge-en-curso {
-  background: rgba(6, 182, 212, 0.15);
-  color: var(--color-accent-cyan);
-  border: 1px solid rgba(6, 182, 212, 0.3);
+  background: rgba(5, 15, 25, 0.92);
+  color: #22d3ee;
+  border: 1px solid rgba(6, 182, 212, 0.6);
 }
 
 .badge-jugado {
-  background: rgba(16, 185, 129, 0.15);
-  color: var(--color-accent-emerald);
-  border: 1px solid rgba(16, 185, 129, 0.3);
+  background: rgba(5, 20, 12, 0.92);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.6);
 }
 
 .badge-abandonado {
-  background: rgba(244, 63, 94, 0.15);
-  color: var(--color-accent-rose);
-  border: 1px solid rgba(244, 63, 94, 0.3);
+  background: rgba(25, 8, 12, 0.92);
+  color: #fb7185;
+  border: 1px solid rgba(244, 63, 94, 0.6);
 }
 
 .badge-prestado {
-  background: rgba(124, 58, 237, 0.15);
-  color: var(--color-accent-secondary);
-  border: 1px solid rgba(124, 58, 237, 0.3);
+  background: rgba(18, 10, 30, 0.92);
+  color: #c084fc;
+  border: 1px solid rgba(168, 85, 247, 0.6);
 }
+
 
 /* ─── Star Rating ─── */
 .star {

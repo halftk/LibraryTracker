@@ -49,7 +49,8 @@
           />
           <div v-else class="card-cover-placeholder">🎮</div>
           <span :class="['badge', `badge-${statusCss(item.status)}`]" class="card-badge">
-            {{ item.status }}
+            <span>{{ statusIcon(item.status) }}</span>
+            <span>{{ item.status }}</span>
           </span>
         </div>
 
@@ -145,6 +146,17 @@ function statusCss(status: string): string {
     'Prestado': 'prestado',
   };
   return map[status] || 'pendiente';
+}
+
+function statusIcon(status: string): string {
+  const map: Record<string, string> = {
+    'Pendiente': '⏳',
+    'En curso': '🎮',
+    'Jugado': '✅',
+    'Abandonado': '❌',
+    'Prestado': '🤝',
+  };
+  return map[status] || '';
 }
 
 function getCountForStatus(status: string): number {
