@@ -2,6 +2,8 @@
   <div class="library-section">
     <!-- Filters Bar -->
     <div class="filters-bar">
+
+      <!-- ── Desktop: pills de estado ─── -->
       <div class="filter-tabs">
         <button
           v-for="tab in statusTabs"
@@ -15,6 +17,22 @@
         </button>
       </div>
 
+      <!-- ── Móvil: fila compacta con select de estado + ordenación ─── -->
+      <div class="filter-row-mobile">
+        <select v-model="activeFilter" class="input-field filter-select-mobile">
+          <option v-for="tab in statusTabs" :key="tab.value" :value="tab.value">
+            {{ tab.icon }} {{ tab.label }} ({{ getCountForStatus(tab.value) }})
+          </option>
+        </select>
+        <select v-model="sortBy" class="input-field filter-select-mobile">
+          <option value="recent">🕐 Recientes</option>
+          <option value="title">🔤 A-Z</option>
+          <option value="rating">⭐ Valoración</option>
+          <option value="year">📅 Año</option>
+        </select>
+      </div>
+
+      <!-- ── Búsqueda + Ordenación (desktop) ─── -->
       <div class="filter-controls">
         <input
           v-model="localSearch"
@@ -29,7 +47,16 @@
           <option value="year">Año de lanzamiento</option>
         </select>
       </div>
+
+      <!-- ── Búsqueda en móvil ─── -->
+      <input
+        v-model="localSearch"
+        type="text"
+        class="input-field filter-search-mobile"
+        placeholder="🔍 Filtrar por título..."
+      />
     </div>
+
 
     <!-- Grid -->
     <TransitionGroup name="grid" tag="div" class="library-grid">
@@ -563,11 +590,63 @@ onMounted(() => {
 
   .filter-controls {
     flex-direction: column;
+    width: 100%;
   }
 
   .filter-search,
   .filter-select {
     max-width: 100%;
+    width: 100%;
   }
 }
+
+/* ── Elementos exclusivos de móvil (ocultos en desktop) ── */
+.filter-row-mobile,
+.filter-search-mobile {
+  display: none;
+}
+
+/* ── En móvil: ocultar pills y controles desktop, mostrar compactos ── */
+@media (max-width: 640px) {
+  .filter-tabs,
+  .filter-controls {
+    display: none;
+  }
+
+  .filter-row-mobile {
+    display: flex;
+    gap: 0.5rem;
+    width: 100%;
+  }
+
+  .filter-select-mobile {
+    flex: 1;
+    min-width: 0;
+    appearance: none;
+    cursor: pointer;
+    font-size: 0.8rem;
+    padding: 0.5rem 0.75rem;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.6rem center;
+    padding-right: 2rem !important;
+    background-color: var(--color-bg-card);
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    color: var(--color-text-primary);
+    font-family: var(--font-family-base);
+  }
+
+  .filter-select-mobile option {
+    background: var(--color-bg-secondary);
+    color: var(--color-text-primary);
+  }
+
+  .filter-search-mobile {
+    display: block;
+    width: 100%;
+    font-size: 0.875rem;
+  }
+}
+
 </style>
