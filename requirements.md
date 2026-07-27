@@ -105,6 +105,7 @@ Columnas soportadas al importar un CSV:
 | :--- | :--- | :--- | :--- |
 | `Titulo` o `Nombre` | **Sí** | — | Se usa para buscar en IGDB |
 | `Plataforma` | No | `PC` | Texto libre: PC, PS5, Switch, etc. |
+| `Fecha Inicio` | No | null | Formatos: YYYY-MM-DD o DD/MM/YYYY |
 | `Fecha Fin` | No | null | Formatos: YYYY-MM-DD o DD/MM/YYYY |
 | `Estado` | No | `Jugado` si hay fecha fin, sino `Pendiente` | Pendiente / En curso / Jugado / Abandonado / Prestado |
 | `Puntuacion` | No | null | Número de 0 a 5 |

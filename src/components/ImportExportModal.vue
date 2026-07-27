@@ -109,6 +109,7 @@
                           <th>Título</th>
                           <th>Plataforma</th>
                           <th>Estado</th>
+                          <th>Fecha Inicio</th>
                           <th>Fecha Fin</th>
                         </tr>
                       </thead>
@@ -117,10 +118,11 @@
                           <td>{{ row.title }}</td>
                           <td>{{ row.platform }}</td>
                           <td>{{ row.status }}</td>
+                          <td>{{ row.start_date || '—' }}</td>
                           <td>{{ row.finish_date || '—' }}</td>
                         </tr>
                         <tr v-if="parsedRows.length > 5">
-                          <td colspan="4" class="more-rows">… y {{ parsedRows.length - 5 }} más</td>
+                          <td colspan="5" class="more-rows">… y {{ parsedRows.length - 5 }} más</td>
                         </tr>
                       </tbody>
                     </table>
@@ -356,6 +358,7 @@ interface ParsedRow {
   title: string;
   platform: string;
   status: GameStatus;
+  start_date: string | null;
   finish_date: string | null;
   rating: number | null;
   playtime_hours: number;
@@ -537,6 +540,8 @@ function parseCSV(text: string): ParsedRow[] {
       const title = getCol(cols, ['titulo', 'nombre', 'title', 'name', 'juego', 'game']);
       if (!title) return null;
 
+      const startRaw = getCol(cols, ['fecha inicio', 'fecha_inicio', 'start_date', 'inicio', 'started']);
+      const start_date = parseDate(startRaw);
       const finishRaw = getCol(cols, ['fecha fin', 'fecha_fin', 'finish_date', 'fecha', 'date', 'completado']);
       const finish_date = parseDate(finishRaw);
       const statusRaw = getCol(cols, ['estado', 'status', 'state']);
@@ -549,6 +554,7 @@ function parseCSV(text: string): ParsedRow[] {
         title,
         platform,
         status: parseStatusField(statusRaw, !!finish_date),
+        start_date,
         finish_date,
         rating: ratingRaw ? Math.min(5, parseFloat(ratingRaw)) || null : null,
         playtime_hours: hoursRaw ? parseFloat(hoursRaw) || 0 : 0,
@@ -575,6 +581,7 @@ async function processFile(file: File) {
         title: item.game?.title ?? item.title,
         platform: item.platform,
         status: item.status,
+        start_date: item.start_date ?? null,
         finish_date: item.finish_date ?? null,
         rating: item.rating ?? null,
         playtime_hours: item.playtime_hours ?? 0,
@@ -763,7 +770,7 @@ async function runImport() {
     const itemData = {
       platform: m.row.platform,
       status: m.row.status,
-      start_date: null as string | null,
+      start_date: m.row.start_date,
       finish_date: m.row.finish_date,
       playtime_hours: m.row.playtime_hours,
       rating: m.row.rating,
@@ -816,6 +823,8 @@ async function exportJSON() {
     const items = await getLibraryItems(user.id);
     const json = JSON.stringify(items, null, 2);
     downloadBlob(json, `librarytracker-backup-${today()}.json`, 'application/json');
+  } catch (err) {
+    console.error('Error exporting JSON:', err);
   } finally { exporting.value = null; }
 }
 
@@ -827,25 +836,30 @@ async function exportCSV() {
     const items = await getLibraryItems(user.id);
     const header = 'Titulo;Plataforma;Estado;Fecha Inicio;Fecha Fin;Puntuacion;Horas;Notas';
     const rows = items.map(i => [
-      csvEscape(i.game?.title ?? ''),
+      csvEscape(i.game?.title),
       csvEscape(i.platform),
       csvEscape(i.status),
-      i.start_date ?? '',
-      i.finish_date ?? '',
-      i.rating ?? '',
-      i.playtime_hours ?? '0',
-      csvEscape(i.notes ?? ''),
+      csvEscape(i.start_date),
+      csvEscape(i.finish_date),
+      csvEscape(i.rating),
+      csvEscape(i.playtime_hours),
+      csvEscape(i.notes),
     ].join(';'));
-    const csv = [header, ...rows].join('\n');
+    const csv = [header, ...rows].join('\r\n');
     downloadBlob('\uFEFF' + csv, `librarytracker-${today()}.csv`, 'text/csv;charset=utf-8');
-  } finally { exporting.value = null; }
+  } catch (err) {
+    console.error('Error exporting CSV:', err);
+  } finally {
+    exporting.value = null;
+  }
 }
 
-function csvEscape(val: string): string {
-  if (val.includes(';') || val.includes('"') || val.includes('\n')) {
-    return '"' + val.replace(/"/g, '""') + '"';
+function csvEscape(val: any): string {
+  const str = val === null || val === undefined ? '' : String(val);
+  if (str.includes(';') || str.includes('"') || str.includes('\n') || str.includes('\r')) {
+    return '"' + str.replace(/"/g, '""') + '"';
   }
-  return val;
+  return str;
 }
 
 function downloadBlob(content: string, filename: string, mime: string) {
@@ -854,8 +868,13 @@ function downloadBlob(content: string, filename: string, mime: string) {
   const a = document.createElement('a');
   a.href = url;
   a.download = filename;
+  a.style.display = 'none';
+  document.body.appendChild(a);
   a.click();
-  URL.revokeObjectURL(url);
+  setTimeout(() => {
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, 100);
 }
 
 function today() {
