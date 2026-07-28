@@ -110,6 +110,11 @@
       </section>
     </template>
 
+    <!-- Toast de actualización de versión disponible -->
+    <div v-if="updateAvailable" class="update-toast">
+      <span class="update-toast-text">🚀 Nueva versión disponible</span>
+      <button @click="applyUpdate" class="update-toast-btn">Actualizar ahora</button>
+    </div>
   </div>
 </template>
 
@@ -169,7 +174,19 @@ function refreshAll() {
   statsRef.value?.refresh();
 }
 
+const updateAvailable = ref(false);
+
+const applyUpdate = () => {
+  if (typeof window !== 'undefined') {
+    window.location.reload();
+  }
+};
+
 onMounted(async () => {
+  window.addEventListener('app-update-available', () => {
+    updateAvailable.value = true;
+  });
+
   const { data } = await supabase.auth.getUser();
   user.value = data.user;
   authLoading.value = false;
@@ -468,8 +485,52 @@ watchEffect(() => {
   gap: 0.5rem;
 }
 
+.update-toast {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 9999;
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-accent-primary);
+  border-radius: 12px;
+  padding: 0.75rem 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), 0 0 20px var(--color-accent-glow);
+  animation: slide-up 0.4s ease-out;
+}
+
+.update-toast-text {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.update-toast-btn {
+  background: linear-gradient(135deg, var(--color-accent-primary), var(--color-accent-secondary));
+  color: white;
+  border: none;
+  padding: 0.4rem 0.85rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.update-toast-btn:hover {
+  transform: scale(1.04);
+}
+
 @media (max-width: 640px) {
   .hero-title { font-size: 1.75rem; }
   .landing-title { font-size: 1.75rem; }
+  .update-toast {
+    left: 1rem;
+    right: 1rem;
+    bottom: 1rem;
+    justify-content: space-between;
+  }
 }
 </style>

@@ -27,13 +27,24 @@ const { title = 'LibraryTracker', description = 'Gestiona tu biblioteca de video
       if ('serviceWorker' in navigator) {
         if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
           navigator.serviceWorker.getRegistrations().then((registrations) => {
-            for (let registration of registrations) {
+            for (const registration of registrations) {
               registration.unregister();
             }
           });
         } else {
           window.addEventListener('load', () => {
-            navigator.serviceWorker.register('/sw.js').catch((err) => {
+            navigator.serviceWorker.register('/sw.js').then((reg) => {
+              reg.onupdatefound = () => {
+                const installingWorker = reg.installing;
+                if (installingWorker) {
+                  installingWorker.onstatechange = () => {
+                    if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                      window.dispatchEvent(new CustomEvent('app-update-available'));
+                    }
+                  };
+                }
+              };
+            }).catch((err) => {
               console.warn('SW registration failed:', err);
             });
           });
