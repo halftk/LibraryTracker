@@ -241,7 +241,7 @@
                     <p v-if="updatedCount > 0">🔄 <strong>{{ updatedCount }}</strong> juegos existentes actualizados.</p>
                     <p v-if="skippedDuplicates > 0" class="result-note">⏭ <strong>{{ skippedDuplicates }}</strong> duplicados omitidos por tu elección.</p>
                   </div>
-                  <button class="btn-next" @click="$emit('done')">Cerrar y actualizar →</button>
+                  <button class="btn-next" @click="handleDone">Cerrar y actualizar →</button>
                 </div>
 
                 <!-- Pre-Import Confirmation & Conflicts -->
@@ -887,15 +887,28 @@ async function runImport() {
   for (const m of toProcess) {
     processedCount.value++;
     const game = m.selected!;
+
+    // Sanear campos para evitar errores de formato en Postgres
+    const startDate = m.row.start_date && m.row.start_date.trim() !== '' ? m.row.start_date.trim() : null;
+    const finishDate = m.row.finish_date && m.row.finish_date.trim() !== '' ? m.row.finish_date.trim() : null;
+
+    let status: GameStatus = 'Jugado';
+    const sRaw = (m.row.status || '').toString().trim().toLowerCase();
+    if (sRaw.includes('curso') || sRaw.includes('jugando') || sRaw.includes('playing')) status = 'En curso';
+    else if (sRaw.includes('pendiente') || sRaw.includes('plan') || sRaw.includes('backlog')) status = 'Pendiente';
+    else if (sRaw.includes('abandon') || sRaw.includes('drop')) status = 'Abandonado';
+    else if (sRaw.includes('prestad') || sRaw.includes('lent')) status = 'Prestado';
+    else status = 'Jugado';
+
     const itemData = {
-      platform: m.row.platform,
-      status: m.row.status,
-      start_date: m.row.start_date,
-      finish_date: m.row.finish_date,
-      playtime_hours: m.row.playtime_hours,
-      rating: m.row.rating,
+      platform: m.row.platform || 'PC',
+      status,
+      start_date: startDate,
+      finish_date: finishDate,
+      playtime_hours: typeof m.row.playtime_hours === 'number' && !isNaN(m.row.playtime_hours) ? m.row.playtime_hours : 0,
+      rating: typeof m.row.rating === 'number' && !isNaN(m.row.rating) ? m.row.rating : null,
       lent_to: null as string | null,
-      notes: m.row.notes,
+      notes: m.row.notes ? m.row.notes : null,
     };
 
     if (m.existingId) {
@@ -923,6 +936,7 @@ async function runImport() {
         await addLibraryItemToDB(user.id, gameSnapshot, itemData);
         importedCount.value++;
       } catch (err: any) {
+        console.error('Error inserting library item:', game.title, err);
         if (err?.code === '23505' || err?.message?.includes('unique')) {
           skippedDuplicates.value++;
         }
@@ -932,6 +946,13 @@ async function runImport() {
 
   importing.value = false;
   importDone.value = true;
+}
+
+function handleDone() {
+  emit('done');
+  if (typeof window !== 'undefined') {
+    window.location.reload();
+  }
 }
 
 // ── Export ────────────────────────────────────────────
