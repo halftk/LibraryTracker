@@ -717,19 +717,20 @@ async function startMatching() {
 
 async function searchForMatch(i: number, rawQuery: string) {
   const cleanQuery = sanitizeTitleForSearch(rawQuery);
+  const lang = (typeof localStorage !== 'undefined' && localStorage.getItem('app_lang')) || 'es';
   try {
-    let res = await fetch(`/api/igdb/search?q=${encodeURIComponent(cleanQuery)}&limit=5`);
+    let res = await fetch(`/api/igdb/search?q=${encodeURIComponent(cleanQuery)}&limit=5&lang=${lang}`);
     let results: IGDBGame[] = await res.json();
 
     // Fallback: if sanitized query yields no results, try raw query or base title before colon
     if (!results.length && cleanQuery !== rawQuery) {
-      res = await fetch(`/api/igdb/search?q=${encodeURIComponent(rawQuery)}&limit=5`);
+      res = await fetch(`/api/igdb/search?q=${encodeURIComponent(rawQuery)}&limit=5&lang=${lang}`);
       results = await res.json();
     }
 
     if (!results.length && cleanQuery.includes(':')) {
       const baseTitle = cleanQuery.split(':')[0].trim();
-      res = await fetch(`/api/igdb/search?q=${encodeURIComponent(baseTitle)}&limit=5`);
+      res = await fetch(`/api/igdb/search?q=${encodeURIComponent(baseTitle)}&limit=5&lang=${lang}`);
       results = await res.json();
     }
 

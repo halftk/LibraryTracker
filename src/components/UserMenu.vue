@@ -1,5 +1,14 @@
 <template>
   <div class="auth-menu">
+    <!-- Botón circular de idioma -->
+    <button
+      class="lang-btn"
+      @click="toggleLang"
+      :title="currentLang === 'es' ? 'Idioma: Español (Cambiar a English)' : 'Language: English (Switch to Español)'"
+    >
+      <span class="flag-icon">{{ currentLang === 'es' ? '🇪🇸' : '🇬🇧' }}</span>
+    </button>
+
     <!-- User is logged in -->
     <div v-if="user" class="user-info" ref="menuRef">
       <!-- Trigger: avatar + nombre -->
@@ -147,6 +156,22 @@ const errorMsg = ref('');
 const registrationSuccess = ref(false);
 const menuOpen = ref(false);
 const menuRef = ref<HTMLElement | null>(null);
+const currentLang = ref<'es' | 'en'>('es');
+
+function initLang() {
+  if (typeof window !== 'undefined') {
+    const saved = localStorage.getItem('app_lang') as 'es' | 'en';
+    if (saved === 'es' || saved === 'en') {
+      currentLang.value = saved;
+    }
+  }
+}
+
+function toggleLang() {
+  currentLang.value = currentLang.value === 'es' ? 'en' : 'es';
+  localStorage.setItem('app_lang', currentLang.value);
+  window.dispatchEvent(new CustomEvent('lang-changed', { detail: currentLang.value }));
+}
 
 const form = ref({
   username: '',
@@ -229,6 +254,7 @@ function handleClickOutside(e: MouseEvent) {
 }
 
 onMounted(() => {
+  initLang();
   checkUser();
   supabase.auth.onAuthStateChange((_event, session) => {
     user.value = session?.user ?? null;
@@ -245,6 +271,38 @@ onUnmounted(() => {
 .auth-menu {
   display: flex;
   align-items: center;
+  gap: 0.625rem;
+}
+
+/* ── Botón circular de idioma ─────────────── */
+.lang-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.lang-btn:hover {
+  border-color: var(--color-accent-primary);
+  transform: scale(1.08);
+  background: var(--color-bg-secondary);
+  box-shadow: 0 0 12px rgba(109, 40, 217, 0.3);
+}
+
+.flag-icon {
+  font-size: 1.1rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .user-info {
