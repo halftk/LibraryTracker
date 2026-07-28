@@ -60,6 +60,14 @@
             <span>Importar / Exportar datos</span>
           </button>
 
+          <button class="dropdown-item" @click="handleInstallApp">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
+              <line x1="12" y1="18" x2="12.01" y2="18"/>
+            </svg>
+            <span>Instalar App en tu dispositivo</span>
+          </button>
+
           <div class="dropdown-divider"></div>
 
           <button class="dropdown-item danger" @click="handleLogout">
@@ -269,6 +277,30 @@ function handleClickOutside(e: MouseEvent) {
   }
 }
 
+const deferredPrompt = ref<any>(null);
+
+function handleInstallApp() {
+  menuOpen.value = false;
+  if (deferredPrompt.value) {
+    deferredPrompt.value.prompt();
+    deferredPrompt.value.userChoice.then(() => {
+      deferredPrompt.value = null;
+    });
+  } else {
+    const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+    if (isIos) {
+      alert('📱 Para instalar en tu iPhone / iPad:\n\n1. Toca el botón "Compartir" de Safari (icono de la flecha ⬆️ en la barra inferior).\n2. Selecciona "Añadir a la pantalla de inicio" 📲');
+    } else {
+      alert('📱 Para instalar esta aplicación:\n\nAbre el menú de tu navegador (3 puntos arriba a la derecha) y pulsa en "Instalar aplicación" o "Añadir a la pantalla de inicio".');
+    }
+  }
+}
+
+function handleBeforeInstallPrompt(e: Event) {
+  e.preventDefault();
+  deferredPrompt.value = e;
+}
+
 onMounted(() => {
   initLang();
   checkUser();
@@ -276,10 +308,12 @@ onMounted(() => {
     user.value = session?.user ?? null;
   });
   document.addEventListener('click', handleClickOutside);
+  window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 });
 
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside);
+  window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 });
 </script>
 

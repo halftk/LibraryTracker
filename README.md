@@ -20,6 +20,7 @@
   - **Gestión de Conflictos**: Control global o por juego para *Sobreescribir* o *Omitir* duplicados, además de opción para vaciar la biblioteca y re-importar de cero.
 - 📅 **Fechas de Seguimiento**: Registro opcional de *Fecha de Inicio* y *Fecha de Fin* de cada videojuego.
 - 🤝 **Control de Préstamos**: Anota a quién le has prestado cada juego físico o digital.
+- 📱 **Aplicación Web Instalable (PWA)**: Compatible con móviles (Android / iOS Safari) y ordenadores. Los usuarios pueden pulsar el botón **"Instalar App en tu dispositivo"** en el menú para añadirla como una aplicación nativa en su pantalla de inicio con su propio icono.
 - 📱 **Diseño Responsive & Glassmorphism**: Interfaz adaptada a dispositivos móviles, tablets y pantallas de escritorio con modo oscuro refinado.
 - 🛡️ **Seguridad y Backups Automáticos**:
   - Control de acceso de datos con **Row Level Security (RLS)** en PostgreSQL/Supabase.
