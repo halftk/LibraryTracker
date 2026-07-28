@@ -737,18 +737,18 @@ async function searchForMatch(i: number, rawQuery: string) {
   const cleanQuery = sanitizeTitleForSearch(rawQuery);
   const lang = (typeof localStorage !== 'undefined' && localStorage.getItem('app_lang')) || 'es';
   try {
-    let res = await fetch(`/api/igdb/search?q=${encodeURIComponent(cleanQuery)}&limit=5&lang=${lang}`);
+    let res = await fetch(`/api/igdb/search?q=${encodeURIComponent(cleanQuery)}&limit=15&lang=${lang}`);
     let results: IGDBGame[] = await res.json();
 
     // Fallback: if sanitized query yields no results, try raw query or base title before colon
     if (!results.length && cleanQuery !== rawQuery) {
-      res = await fetch(`/api/igdb/search?q=${encodeURIComponent(rawQuery)}&limit=5&lang=${lang}`);
+      res = await fetch(`/api/igdb/search?q=${encodeURIComponent(rawQuery)}&limit=15&lang=${lang}`);
       results = await res.json();
     }
 
     if (!results.length && cleanQuery.includes(':')) {
       const baseTitle = cleanQuery.split(':')[0].trim();
-      res = await fetch(`/api/igdb/search?q=${encodeURIComponent(baseTitle)}&limit=5&lang=${lang}`);
+      res = await fetch(`/api/igdb/search?q=${encodeURIComponent(baseTitle)}&limit=15&lang=${lang}`);
       results = await res.json();
     }
 
@@ -756,6 +756,24 @@ async function searchForMatch(i: number, rawQuery: string) {
       matches.value[i].status = 'not_found';
       return;
     }
+
+    // Sort candidates by similarity & exact match priority
+    results.sort((a, b) => {
+      const isExactA = cleanQuery.toLowerCase() === a.title.toLowerCase();
+      const isExactB = cleanQuery.toLowerCase() === b.title.toLowerCase();
+      if (isExactA && !isExactB) return -1;
+      if (!isExactA && isExactB) return 1;
+
+      const simA = titleSimilarity(cleanQuery, a.title);
+      const simB = titleSimilarity(cleanQuery, b.title);
+      const lenDiffA = Math.abs(a.title.length - cleanQuery.length);
+      const lenDiffB = Math.abs(b.title.length - cleanQuery.length);
+
+      if (Math.abs(simA - simB) > 0.08) {
+        return simB - simA;
+      }
+      return lenDiffA - lenDiffB;
+    });
 
     const top = results[0];
     const sim = titleSimilarity(cleanQuery, top.title);

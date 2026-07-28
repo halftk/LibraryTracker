@@ -135,7 +135,7 @@ function onInput() {
 async function searchGames() {
   try {
     const lang = (typeof localStorage !== 'undefined' && localStorage.getItem('app_lang')) || 'es';
-    const res = await fetch(`/api/igdb/search?q=${encodeURIComponent(query.value.trim())}&limit=12&lang=${lang}`);
+    const res = await fetch(`/api/igdb/search?q=${encodeURIComponent(query.value.trim())}&limit=20&lang=${lang}`);
     if (!res.ok) throw new Error('Search failed');
     results.value = await res.json();
   } catch (err) {
