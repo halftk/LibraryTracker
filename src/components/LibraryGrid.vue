@@ -30,6 +30,13 @@
           <option value="rating">⭐ Valoración</option>
           <option value="year">📅 Año</option>
         </select>
+        <button
+          class="btn-sort-order"
+          @click="sortOrder = sortOrder === 'asc' ? 'desc' : 'asc'"
+          :title="sortOrder === 'asc' ? 'Orden ascendente (clic para descendente)' : 'Orden descendente (clic para ascendente)'"
+        >
+          {{ sortOrder === 'asc' ? '↑' : '↓' }}
+        </button>
       </div>
 
       <!-- ── Búsqueda + Ordenación (desktop) ─── -->
@@ -46,6 +53,13 @@
           <option value="rating">Mejor valorados</option>
           <option value="year">Año de lanzamiento</option>
         </select>
+        <button
+          class="btn-sort-order"
+          @click="sortOrder = sortOrder === 'asc' ? 'desc' : 'asc'"
+          :title="sortOrder === 'asc' ? 'Orden ascendente (clic para descendente)' : 'Orden descendente (clic para ascendente)'"
+        >
+          {{ sortOrder === 'asc' ? '↑' : '↓' }}
+        </button>
       </div>
 
       <!-- ── Búsqueda en móvil ─── -->
@@ -168,6 +182,7 @@ const items = ref<LibraryItem[]>([]);
 const activeFilter = ref('all');
 const localSearch = ref('');
 const sortBy = ref('recent');
+const sortOrder = ref<'asc' | 'desc'>('desc');
 const currentUser = ref<User | null>(null);
 const loading = ref(true);
 const editingItem = ref<any>(null);
@@ -223,19 +238,21 @@ const filteredItems = computed(() => {
   }
 
   // Sort
+  const isAsc = sortOrder.value === 'asc';
+
   switch (sortBy.value) {
     case 'title':
-      result.sort((a, b) => a.game.title.localeCompare(b.game.title));
+      result.sort((a, b) => isAsc ? a.game.title.localeCompare(b.game.title) : b.game.title.localeCompare(a.game.title));
       break;
     case 'rating':
-      result.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+      result.sort((a, b) => isAsc ? (a.rating || 0) - (b.rating || 0) : (b.rating || 0) - (a.rating || 0));
       break;
     case 'year':
-      result.sort((a, b) => (b.game.release_year || 0) - (a.game.release_year || 0));
+      result.sort((a, b) => isAsc ? (a.game.release_year || 0) - (b.game.release_year || 0) : (b.game.release_year || 0) - (a.game.release_year || 0));
       break;
     case 'recent':
     default:
-      result.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      result.sort((a, b) => isAsc ? new Date(a.created_at).getTime() - new Date(b.created_at).getTime() : new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
       break;
   }
 
@@ -401,6 +418,32 @@ onMounted(() => {
   background-repeat: no-repeat;
   background-position: right 0.75rem center;
   padding-right: 2.5rem !important;
+}
+
+.btn-sort-order {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-primary);
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  user-select: none;
+  font-family: var(--font-family-base);
+}
+
+.btn-sort-order:hover {
+  border-color: var(--color-accent-primary);
+  color: var(--color-accent-primary);
+  background: var(--color-bg-secondary);
+  box-shadow: 0 0 10px rgba(109, 40, 217, 0.2);
 }
 
 .filter-select option {
