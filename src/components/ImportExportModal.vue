@@ -275,8 +275,18 @@
                   <!-- Conflict Resolution Box (if duplicates exist) -->
                   <div v-if="duplicateCount > 0" class="conflict-box">
                     <div class="conflict-header">
-                      <span class="conflict-title">⚠️ Conflictos detectados ({{ duplicateCount }})</span>
-                      <span class="conflict-desc">Estos juegos ya existen en tu biblioteca para la misma plataforma.</span>
+                      <div class="conflict-title-row">
+                        <span class="conflict-title">⚠️ Conflictos detectados ({{ duplicateCount }})</span>
+                        <button
+                          class="btn-clear-lib"
+                          @click="handleClearLibrary"
+                          :disabled="clearingLibrary"
+                          title="Elimina todos los juegos de tu biblioteca actual para importar todo de cero"
+                        >
+                          {{ clearingLibrary ? 'Eliminando...' : '🗑 Vaciar biblioteca y re-importar' }}
+                        </button>
+                      </div>
+                      <span class="conflict-desc">Estos juegos ya existen en tu biblioteca para la misma plataforma. Puedes sobreescribirlos o vaciar la biblioteca para re-importar de cero.</span>
                     </div>
 
                     <!-- Global Bulk Controls -->
@@ -355,7 +365,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import { supabase, getLibraryItems, addLibraryItemToDB, updateLibraryItemInDB } from '../lib/supabase';
+import { supabase, getLibraryItems, addLibraryItemToDB, updateLibraryItemInDB, clearUserLibraryInDB } from '../lib/supabase';
 
 type GameStatus = 'Pendiente' | 'En curso' | 'Jugado' | 'Abandonado' | 'Prestado';
 
@@ -423,7 +433,24 @@ const matchingDone = ref(false);
 const checkingDuplicates = ref(false);
 
 // Conflict resolution state
-const globalConflictAction = ref<'skip' | 'overwrite'>('skip');
+const globalConflictAction = ref<'skip' | 'overwrite'>('overwrite');
+const clearingLibrary = ref(false);
+
+async function handleClearLibrary() {
+  if (!confirm('¿Estás seguro de que deseas eliminar TODOS los juegos actuales de tu biblioteca para volver a importar desde cero?')) return;
+  clearingLibrary.value = true;
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      await clearUserLibraryInDB(user.id);
+      await goToConfirmStep();
+    }
+  } catch (err: any) {
+    alert('Error al vaciar la biblioteca: ' + (err.message || 'Error de permisos o conexión.'));
+  } finally {
+    clearingLibrary.value = false;
+  }
+}
 
 // Execution state
 const importing = ref(false);
@@ -1389,14 +1416,43 @@ function today() {
 .conflict-header {
   display: flex;
   flex-direction: column;
-  gap: 0.2rem;
+  gap: 0.35rem;
   margin-bottom: 1rem;
+}
+
+.conflict-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .conflict-title {
   font-size: 0.9rem;
   font-weight: 700;
   color: #eab308;
+}
+
+.btn-clear-lib {
+  padding: 0.35rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid var(--color-accent-rose);
+  background: rgba(244, 63, 94, 0.1);
+  color: var(--color-accent-rose);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: var(--font-family-base);
+}
+.btn-clear-lib:hover:not(:disabled) {
+  background: var(--color-accent-rose);
+  color: #fff;
+}
+.btn-clear-lib:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .conflict-desc {

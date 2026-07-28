@@ -139,6 +139,18 @@ export async function deleteLibraryItemFromDB(id: string) {
 }
 
 /**
+ * Elimina todos los items de la biblioteca de un usuario
+ */
+export async function clearUserLibraryInDB(userId: string) {
+  const { error } = await supabase
+    .from('library_items')
+    .delete()
+    .eq('user_id', userId);
+
+  if (error) throw error;
+}
+
+/**
  * Actualiza los campos editables de un library_item existente
  */
 export async function updateLibraryItemInDB(
