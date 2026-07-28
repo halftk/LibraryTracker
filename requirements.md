@@ -28,6 +28,10 @@ Cada elemento en la biblioteca del usuario representa un par **(Juego, Plataform
 - `generos`: Lista de géneros (ej. RPG, Acción, Aventura).
 - `desarrolladores`: Estudio/compañía desarrolladora.
 - `steam_appid`: (Opcional) Identificador del juego en Steam si existe en IGDB (`external_games`).
+- `modo_cooperativo`: Indicador de modos multijugador proveniente del campo `multiplayer_modes` de IGDB:
+  - `offlinecoop`: Cooperativo local / sofá / pantalla dividida (y `offlinecoopmax`).
+  - `onlinecoop`: Cooperativo online a través de internet (y `onlinecoopmax`).
+  - `campaigncoop`: Cooperativo en el modo campaña / historia.
 
 ### 2.2 Datos Propios del Usuario
 - `user_id`: Identificador del usuario propietario de la biblioteca.
@@ -153,11 +157,21 @@ Al exportar en JSON, se guardan todos los campos incluyendo `igdb_id`, `cover_ur
 - **Importación y Exportación CSV/JSON**: Flujo en 3 pasos con matching asistido contra IGDB.
 - **Backups Nocturnos Automáticos**: GitHub Actions ejecuta `pg_dump` cada noche a las 03:00 AM UTC y guarda el artefacto en GitHub por 30 días.
 
-### Fase 3: Autenticación Social
+### Fase 3: Filtros Avanzados e Insignias de Cooperativo 🎮
+- **Detección e Insignias de Modo Cooperativo**: Mostrar insignias visuales claras en las tarjetas de juego (ej. `Co-Op Local`, `Co-Op Online`, `Campaña Co-Op`) extrayendo la relación `multiplayer_modes` de IGDB.
+- **Filtro de Cooperativo en Biblioteca**: Opción para filtrar y buscar sencillamente qué juegos de la biblioteca personal soportan juego cooperativo local o cooperativo online para jugar con amigos.
+
+### Fase 4: Sistema Social y Juegos en Común con Amigos 👥 (Para el futuro)
+- **Sistema de Amigos**: Buscar usuarios por nombre/email y gestionar solicitudes de amistad (enviar, aceptar o rechazar solicitudes).
+- **Comparador de Bibliotecas**: Comparar bibliotecas con un amigo para descubrir los **juegos que ambos tenéis en común** (juegos coincidentes).
+- **Filtro Cruzado (Juegos en Común + Cooperativo)**: Filtro directo para listar juegos en común que además disponen de modo **Cooperativo Online** o **Cooperativo Local**, para responder a la pregunta *"¿A qué juegos podemos jugar juntos hoy?"*.
+- **Integración con Préstamos**: Vincular la cuenta de un amigo registrado al cambiar el estado de un juego a `Prestado`.
+
+### Fase 5: Autenticación Social
 - Inicio de sesión con Google OAuth y Microsoft OAuth vía Supabase Auth.
 - Gestión de perfiles públicos / compartibles de bibliotecas.
 
-### Fase 4: Integración con Steam (Vinculación de Biblioteca)
+### Fase 6: Integración con Steam (Vinculación de Biblioteca)
 - Login con Steam (OpenID).
 - Consulta de juegos poseídos mediante Steam Web API (`IPlayerService/GetOwnedGames`).
 - Cruce automático de datos con `igdb_id` → `steam_appid` para importar horas jugadas.
