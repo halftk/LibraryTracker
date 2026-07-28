@@ -1,43 +1,128 @@
-# Astro Starter Kit: Minimal
+# 🎮 LibraryTracker
 
-```sh
-npm create astro@latest -- --template minimal
-```
+> **LibraryTracker** es una aplicación web moderna y elegante para gestionar y hacer seguimiento de tu colección personal de videojuegos, con sincronización en la nube a través de Supabase e integración en tiempo real con la base de datos de **IGDB**.
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+---
 
-## 🚀 Project Structure
+## ✨ Características Principales
 
-Inside of your Astro project, you'll see the following folders and files:
+- 🔍 **Búsqueda en Tiempo Real con IGDB**: Consulta millones de videojuegos con portadas en alta definición, año de lanzamiento, desarrolladores, géneros y enlace a Steam.
+- 🌐 **Soporte Multilingüe (Español / Inglés)**: Selector global de idioma en el header con banderas vectoriales SVG (🇪🇸 / 🇬🇧). Prioriza nombres y datos regionalizados en español cuando están disponibles en IGDB.
+- 📊 **Gestión de Estados**: Categoriza tu biblioteca en *Pendientes*, *En curso*, *Jugados*, *Abandonados* y *Prestados*.
+- 🔀 **Filtros y Ordenación Avanzada**:
+  - Filtro rápido por texto y estado.
+  - Ordenación por *Recientes*, *A-Z*, *Valoración* y *Año de lanzamiento*.
+  - Conmutador bidireccional de orden (ascendente `↑` / descendente `↓`).
+- 📦 **Asistente de Importación y Exportación en 3 Pasos**:
+  - **Exportación**: Backups completos en **JSON nativo** y **CSV estándar**.
+  - **Importación desde CSV / Excel**: Carga de archivos con normalización automática de plataformas (*GameCube, GC, GameBoy, GBA, NDS, Wii...*).
+  - **Emparejamiento Inteligente**: Asignación automática (🟢) y ambigua (🟡) con desplegable de candidatas y corrección de título manual en tiempo real.
+  - **Gestión de Conflictos**: Control global o por juego para *Sobreescribir* o *Omitir* duplicados, además de opción para vaciar la biblioteca y re-importar de cero.
+- 📅 **Fechas de Seguimiento**: Registro opcional de *Fecha de Inicio* y *Fecha de Fin* de cada videojuego.
+- 🤝 **Control de Préstamos**: Anota a quién le has prestado cada juego físico o digital.
+- 📱 **Diseño Responsive & Glassmorphism**: Interfaz adaptada a dispositivos móviles, tablets y pantallas de escritorio con modo oscuro refinado.
+- 🛡️ **Seguridad y Backups Automáticos**:
+  - Control de acceso de datos con **Row Level Security (RLS)** en PostgreSQL/Supabase.
+  - **Backups diarios automatizados** mediante GitHub Actions (`pg_dump` cada día a las 03:00 UTC).
+
+---
+
+## 🛠️ Tecnologías Utilizadas
+
+- **Framework**: [Astro](https://astro.build/) (Modo Server / SSR) con adaptador `@astrojs/vercel`.
+- **UI & Reactividad**: [Vue 3](https://vuejs.org/) (Composition API `<script setup lang="ts">`).
+- **Base de Datos & Autenticación**: [Supabase](https://supabase.com/) (PostgreSQL + RLS + Supabase Auth).
+- **API Externa**: [IGDB API v4](https://api-docs.igdb.com/) (Autenticación OAuth2 vía Twitch).
+- **Estilos**: Vanilla CSS3 (Design System con variables CSS, animaciones suaves y componentes adaptativos).
+
+---
+
+## 📁 Estructura del Proyecto
 
 ```text
-/
+LibraryTracker/
+├── .github/workflows/
+│   └── db-backup.yml        # Workflow de backup diario a Supabase PostgreSQL
 ├── public/
+│   └── favicon.svg
 ├── src/
-│   └── pages/
-│       └── index.astro
+│   ├── components/
+│   │   ├── AddGameModal.vue       # Modal para añadir / editar un juego
+│   │   ├── GameSearch.vue         # Buscador principal con autocompletado IGDB
+│   │   ├── ImportExportModal.vue  # Asistente de importación CSV/JSON y exportación
+│   │   ├── LibraryGrid.vue        # Vista principal de la biblioteca con filtros y ordenación
+│   │   ├── StatsDashboard.vue     # Panel de estadísticas visuales
+│   │   └── UserMenu.vue           # Menú de usuario, login/registro y selector de idioma
+│   ├── layouts/
+│   │   └── Layout.astro           # Estructura HTML base y Header global
+│   ├── lib/
+│   │   ├── igdb.ts                # Cliente API IGDB (OAuth2 Twitch + Formateo)
+│   │   └── supabase.ts            # Cliente e isomorphic helpers de Supabase
+│   ├── pages/
+│   │   ├── api/igdb/search.ts     # Endpoint proxy API para búsquedas IGDB
+│   │   └── index.astro            # Página principal de la aplicación
+│   └── styles/
+│       └── global.css             # Sistema de diseño global y variables CSS
+├── database_schema.md             # Script SQL idempotente para Supabase
 └── package.json
 ```
 
-Astro looks for `.astro` or `.md` files in the `src/pages/` directory. Each page is exposed as a route based on its file name.
+---
 
-There's nothing special about `src/components/`, but that's where we like to put any Astro/React/Vue/Svelte/Preact components.
+## 🚀 Guía de Instalación Local (Para Forks)
 
-Any static assets, like images, can be placed in the `public/` directory.
+### 1. Requisitos Previos
 
-## 🧞 Commands
+- [Node.js](https://nodejs.org/) v18.0.0 o superior.
+- Una cuenta en [Supabase](https://supabase.com/).
+- Una cuenta de desarrollador en [Twitch Developers](https://dev.twitch.tv/) para obtener credenciales de la API de IGDB.
 
-All commands are run from the root of the project, from a terminal:
+### 2. Clonar el Repositorio e Instalar Dependencias
 
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `npm install`             | Installs dependencies                            |
-| `npm run dev`             | Starts local dev server at `localhost:4321`      |
-| `npm run build`           | Build your production site to `./dist/`          |
-| `npm run preview`         | Preview your build locally, before deploying     |
-| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `npm run astro -- --help` | Get help using the Astro CLI                     |
+```bash
+git clone https://github.com/tu-usuario/LibraryTracker.git
+cd LibraryTracker
+npm install
+```
 
-## 👀 Want to learn more?
+### 3. Configurar las Variables de Entorno
 
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+Crea un archivo `.env` en la raíz del proyecto basándote en la siguiente plantilla:
+
+```env
+# Supabase (Client-side & Server-side)
+PUBLIC_SUPABASE_URL=https://tu-proyecto.supabase.co
+PUBLIC_SUPABASE_ANON_KEY=tu-supabase-anon-key
+
+# IGDB / Twitch OAuth2 (Server-side)
+TWITCH_CLIENT_ID=tu-twitch-client-id
+TWITCH_CLIENT_SECRET=tu-twitch-client-secret
+```
+
+### 4. Configurar la Base de Datos en Supabase
+
+1. Abre el panel de tu proyecto en Supabase ➔ **SQL Editor**.
+2. Copia todo el contenido del archivo [`database_schema.md`](file:///c:/Users/halft/Documents/Coding%20Projects/LibraryTracker/database_schema.md).
+3. Ejecuta el script para crear las tablas (`profiles`, `games`, `library_items`, `reviews`), tipos `ENUM`, triggers y políticas **RLS**.
+
+### 5. Iniciar el Servidor de Desarrollo
+
+```bash
+npm run dev
+```
+
+Abre [http://localhost:4321](http://localhost:4321) en tu navegador para ver la aplicación en funcionamiento.
+
+---
+
+## 📦 Scripts Disponibles
+
+- `npm run dev`: Inicia el servidor de desarrollo local de Astro.
+- `npm run build`: Compila la aplicación para producción (adaptador Vercel).
+- `npm run preview`: Previsualiza la build de producción localmente.
+
+---
+
+## 📄 Licencia
+
+Este proyecto está bajo la Licencia MIT. ¡Siéntete libre de hacer un fork, mejorarlo y contribuir!
