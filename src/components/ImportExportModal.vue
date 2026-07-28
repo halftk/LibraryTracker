@@ -490,6 +490,40 @@ function parseStatusField(raw: string, hasFinishDate: boolean): GameStatus {
   return hasFinishDate ? 'Jugado' : 'Pendiente';
 }
 
+function normalizePlatform(raw: string): string {
+  if (!raw) return 'PC';
+  const clean = raw.trim();
+  const lower = clean.toLowerCase();
+
+  if (lower === 'gameboy' || lower === 'gb') return 'Game Boy';
+  if (lower === 'gameboy color' || lower === 'gbc') return 'Game Boy Color';
+  if (lower === 'gameboy advance' || lower === 'gba') return 'Game Boy Advance';
+  if (lower === 'game cube' || lower === 'gc' || lower === 'gamecube') return 'GameCube';
+  if (lower === 'nintendo ds' || lower === 'nds' || lower === 'ds') return 'Nintendo DS';
+  if (lower === 'nintendo 3ds' || lower === '3ds') return 'Nintendo 3DS';
+  if (lower === 'ps1' || lower === 'psx' || lower === 'playstation 1') return 'PlayStation';
+  if (lower === 'ps2' || lower === 'playstation 2') return 'PlayStation 2';
+  if (lower === 'ps3' || lower === 'playstation 3') return 'PlayStation 3';
+  if (lower === 'ps4' || lower === 'playstation 4') return 'PlayStation 4';
+  if (lower === 'ps5' || lower === 'playstation 5') return 'PlayStation 5';
+  if (lower === 'switch' || lower === 'nintendo switch') return 'Nintendo Switch';
+  if (lower === 'snes' || lower === 'super nintendo') return 'SNES';
+  if (lower === 'nes') return 'NES';
+
+  return clean;
+}
+
+function sanitizeTitleForSearch(raw: string): string {
+  let cleaned = raw.trim();
+  // Quitar contadores tipo " x4", " x2"
+  cleaned = cleaned.replace(/\s+x\s*\d+$/i, '');
+  // Quitar coletillas tipo "+ Expansions", "+ DLC"
+  cleaned = cleaned.replace(/\s*\+\s*(expansions|dlc|expansion).*$/i, '');
+  // Normalizar espaciados en dos puntos: "Mario Kart : Double Dash" -> "Mario Kart: Double Dash"
+  cleaned = cleaned.replace(/\s+:\s+/g, ': ');
+  return cleaned.trim();
+}
+
 // ── CSV Parser ───────────────────────────────────────
 function parseCSVLine(line: string, delimiter: string): string[] {
   const result: string[] = [];
@@ -545,7 +579,8 @@ function parseCSV(text: string): ParsedRow[] {
       const finishRaw = getCol(cols, ['fecha fin', 'fecha_fin', 'finish_date', 'fecha', 'date', 'completado']);
       const finish_date = parseDate(finishRaw);
       const statusRaw = getCol(cols, ['estado', 'status', 'state']);
-      const platform = getCol(cols, ['plataforma', 'platform', 'plat']) || 'PC';
+      const platformRaw = getCol(cols, ['plataforma', 'platform', 'plat']);
+      const platform = normalizePlatform(platformRaw);
       const ratingRaw = getCol(cols, ['puntuacion', 'puntuación', 'rating', 'nota', 'score', 'stars']);
       const hoursRaw = getCol(cols, ['horas', 'hours', 'tiempo', 'playtime']);
       const notes = getCol(cols, ['notas', 'notes', 'resena', 'reseña', 'comentario', 'comment']) || null;
@@ -579,7 +614,7 @@ async function processFile(file: File) {
       if (!items.length) throw new Error('El JSON no contiene entradas válidas.');
       parsedRows.value = items.map((item: any) => ({
         title: item.game?.title ?? item.title,
-        platform: item.platform,
+        platform: normalizePlatform(item.platform),
         status: item.status,
         start_date: item.start_date ?? null,
         finish_date: item.finish_date ?? null,
@@ -591,6 +626,7 @@ async function processFile(file: File) {
         genres: item.game?.genres ?? [],
         developers: item.game?.developers ?? [],
       }));
+
       fileType.value = 'json';
     } else {
       parsedRows.value = parseCSV(text);
@@ -649,7 +685,7 @@ async function startMatching() {
     candidates: [],
     selected: null,
     skipped: false,
-    retryQuery: row.title,
+    retryQuery: sanitizeTitleForSearch(row.title),
   }));
 
   for (let i = 0; i < matches.value.length; i++) {
@@ -661,10 +697,23 @@ async function startMatching() {
   matchingDone.value = true;
 }
 
-async function searchForMatch(i: number, query: string) {
+async function searchForMatch(i: number, rawQuery: string) {
+  const cleanQuery = sanitizeTitleForSearch(rawQuery);
   try {
-    const res = await fetch(`/api/igdb/search?q=${encodeURIComponent(query)}&limit=5`);
-    const results: IGDBGame[] = await res.json();
+    let res = await fetch(`/api/igdb/search?q=${encodeURIComponent(cleanQuery)}&limit=5`);
+    let results: IGDBGame[] = await res.json();
+
+    // Fallback: if sanitized query yields no results, try raw query or base title before colon
+    if (!results.length && cleanQuery !== rawQuery) {
+      res = await fetch(`/api/igdb/search?q=${encodeURIComponent(rawQuery)}&limit=5`);
+      results = await res.json();
+    }
+
+    if (!results.length && cleanQuery.includes(':')) {
+      const baseTitle = cleanQuery.split(':')[0].trim();
+      res = await fetch(`/api/igdb/search?q=${encodeURIComponent(baseTitle)}&limit=5`);
+      results = await res.json();
+    }
 
     if (!results.length) {
       matches.value[i].status = 'not_found';
@@ -672,7 +721,7 @@ async function searchForMatch(i: number, query: string) {
     }
 
     const top = results[0];
-    const sim = titleSimilarity(query, top.title);
+    const sim = titleSimilarity(cleanQuery, top.title);
 
     if (sim >= 0.85 || results.length === 1) {
       matches.value[i].status = 'matched';
@@ -686,6 +735,7 @@ async function searchForMatch(i: number, query: string) {
     matches.value[i].status = 'not_found';
   }
 }
+
 
 function selectCandidate(i: number, igdbId: string) {
   const id = parseInt(igdbId, 10);
