@@ -6,7 +6,23 @@
       @click="toggleLang"
       :title="currentLang === 'es' ? 'Idioma: Español (Cambiar a English)' : 'Language: English (Switch to Español)'"
     >
-      <span class="flag-icon">{{ currentLang === 'es' ? '🇪🇸' : '🇬🇧' }}</span>
+      <span class="flag-icon">
+        <!-- Bandera España -->
+        <svg v-if="currentLang === 'es'" class="flag-svg" viewBox="0 0 36 36">
+          <path fill="#C60B1E" d="M36 18c0-4.144-1.401-7.962-3.755-11.021H3.755C1.401 10.038 0 13.856 0 18s1.401 7.962 3.755 11.021h28.49C34.599 25.962 36 22.144 36 18z"/>
+          <path fill="#FFC400" d="M.404 12.521h35.192c.621 1.705.964 3.541.964 5.479 0 1.938-.343 3.774-.964 5.479H.404C.143 21.774 0 19.938 0 18c0-1.938.143-3.774.404-5.479z"/>
+          <path fill="#C60B1E" d="M32.245 6.979C28.847 2.697 23.743 0 18 0S7.153 2.697 3.755 6.979h28.49zM3.755 29.021C7.153 33.303 12.257 36 18 36s10.847-2.697 14.245-6.979H3.755z"/>
+        </svg>
+
+        <!-- Bandera Reino Unido -->
+        <svg v-else class="flag-svg" viewBox="0 0 36 36">
+          <path fill="#00247D" d="M18 36c9.941 0 18-8.059 18-18S27.941 0 18 0 0 8.059 0 18s8.059 18 18 18z"/>
+          <path fill="#FFF" d="M22.062 13.938l12.441-8.295A17.915 17.915 0 0030.344 1.5L18 9.729 5.656 1.5A17.915 17.915 0 001.497 5.643l12.441 8.295L1.5 22.233a17.915 17.915 0 004.156 4.143L18 18.146l12.344 8.23a17.915 17.915 0 004.156-4.143l-12.438-8.295z"/>
+          <path fill="#CF142B" d="M35.79 7.026L23.473 15.238h2.825l10.155-6.77A17.906 17.906 0 0035.79 7.026zM26.298 20.762l10.155 6.77c.414-.492.793-1.009 1.137-1.547l-12.417-8.277h-1.125v3.054zM9.702 15.238L-.453 8.468A17.906 17.906 0 00-1.59 10.015l12.417 8.277h1.125v-3.054zm3.007 5.524L2.554 27.532a17.906 17.906 0 002.825 1.442l12.316-8.212h-2.986z"/>
+          <path fill="#FFF" d="M14 0v36h8V0h-8zM0 14v8h36v-8H0z"/>
+          <path fill="#CF142B" d="M15 0v36h6V0h-6zM0 15v6h36v-6H0z"/>
+        </svg>
+      </span>
     </button>
 
     <!-- User is logged in -->
@@ -298,11 +314,19 @@ onUnmounted(() => {
 }
 
 .flag-icon {
-  font-size: 1.1rem;
-  line-height: 1;
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.flag-svg {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
 .user-info {
