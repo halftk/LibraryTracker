@@ -23,7 +23,6 @@ export interface IGDBGame {
   summary?: string;
   external_games?: { category: number; uid: string }[];
   alternative_names?: { name: string; comment?: string }[];
-  game_localizations?: { name?: string; summary?: string; region?: { category: number } }[];
 }
 
 export interface IGDBGameFormatted {
@@ -102,29 +101,25 @@ function formatCoverUrl(url?: string): string | null {
 function formatGame(game: IGDBGame, lang: 'es' | 'en' = 'es'): IGDBGameFormatted {
   const steamEntry = game.external_games?.find((eg) => eg.category === 1);
 
+  // Default title is the canonical master title (English / International)
   let title = game.name;
-  let summary = game.summary ?? null;
+  const summary = game.summary ?? null;
 
-  if (lang === 'es') {
-    // 1. Check game_localizations (region 5 = Europe, region 1 = Europe/ES)
-    const esLoc = game.game_localizations?.find(
-      (loc) => loc.region?.category === 5 || loc.region?.category === 1
-    );
-    if (esLoc?.name) title = esLoc.name;
-    if (esLoc?.summary) summary = esLoc.summary;
-
-    // 2. If no localized title yet, check alternative_names for Spanish comments/keywords
-    if (title === game.name && game.alternative_names?.length) {
-      const esAlt = game.alternative_names.find((alt) => {
-        const c = alt.comment?.toLowerCase() ?? '';
-        return (
-          c.includes('spanish') ||
-          c.includes('spain') ||
-          c.includes('español') ||
-          c.includes('es')
-        );
-      });
-      if (esAlt?.name) title = esAlt.name;
+  if (lang === 'es' && game.alternative_names?.length) {
+    // Look specifically for a Spanish alternative name in comments
+    const esAlt = game.alternative_names.find((alt) => {
+      const c = alt.comment?.toLowerCase() ?? '';
+      return (
+        c.includes('spanish') ||
+        c.includes('spain') ||
+        c.includes('español') ||
+        c.includes('espanol') ||
+        c.includes('latam') ||
+        c.includes('hispanic')
+      );
+    });
+    if (esAlt?.name) {
+      title = esAlt.name;
     }
   }
 
@@ -151,8 +146,7 @@ const FIELDS_QUERY = `
          involved_companies.company.name, involved_companies.developer,
          platforms.name, platforms.abbreviation, summary,
          external_games.category, external_games.uid,
-         alternative_names.name, alternative_names.comment,
-         game_localizations.name, game_localizations.summary, game_localizations.region.category;
+         alternative_names.name, alternative_names.comment;
 `;
 
 export async function searchGames(query: string, limit = 20, lang: 'es' | 'en' = 'es'): Promise<IGDBGameFormatted[]> {
