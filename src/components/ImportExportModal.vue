@@ -1,7 +1,7 @@
 <template>
   <Teleport to="body">
     <Transition name="ie-fade">
-      <div class="ie-overlay" @click.self="$emit('close')">
+      <div class="ie-overlay">
         <div class="ie-container">
 
           <!-- Header -->
