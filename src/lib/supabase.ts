@@ -99,7 +99,11 @@ export async function addLibraryItemToDB(
   }
 ) {
   // 1. Guardar metadatos en tabla games
-  await upsertGameSnapshot(game);
+  try {
+    await upsertGameSnapshot(game);
+  } catch (err) {
+    console.warn('⚠️ No se pudo guardar la instantánea del juego en public.games:', err);
+  }
 
   // 2. Insertar en library_items
   const { data, error } = await supabase
