@@ -174,28 +174,19 @@
 
                     <!-- Controls -->
                     <div class="match-controls">
-                      <!-- Ambiguous: dropdown to pick or edit manually -->
+                      <!-- Dropdown to pick candidate or edit manually -->
                       <select
-                        v-if="match.status === 'ambiguous' && !match.showCustomInput"
+                        v-if="(match.status === 'matched' || match.status === 'ambiguous') && !match.showCustomInput"
                         class="match-select"
+                        :value="match.selected?.igdb_id ?? ''"
                         @change="e => selectCandidate(i, (e.target as HTMLSelectElement).value)"
                       >
-                        <option value="">— Elige una opción —</option>
+                        <option value="" disabled>— Elige una opción —</option>
                         <option v-for="c in match.candidates" :key="c.igdb_id" :value="c.igdb_id">
                           {{ c.title }} {{ c.release_year ? `(${c.release_year})` : '' }}
                         </option>
-                        <option value="__custom__">✏️ Corregir nombre...</option>
+                        <option value="__custom__">✏️ Buscar otro nombre...</option>
                       </select>
-
-                      <!-- Matched: option to change/edit -->
-                      <button
-                        v-if="match.status === 'matched' && !match.showCustomInput"
-                        class="btn-change"
-                        @click="toggleCustomInput(i)"
-                        title="Cambiar o corregir nombre"
-                      >
-                        ✏️ Editar
-                      </button>
 
                       <!-- Custom input / Not found: input box to search -->
                       <div v-if="match.status === 'not_found' || match.showCustomInput" class="retry-row">
