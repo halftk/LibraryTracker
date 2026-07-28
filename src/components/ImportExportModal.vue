@@ -174,9 +174,9 @@
 
                     <!-- Controls -->
                     <div class="match-controls">
-                      <!-- Ambiguous: dropdown to pick -->
+                      <!-- Ambiguous: dropdown to pick or edit manually -->
                       <select
-                        v-if="match.status === 'ambiguous'"
+                        v-if="match.status === 'ambiguous' && !match.showCustomInput"
                         class="match-select"
                         @change="e => selectCandidate(i, (e.target as HTMLSelectElement).value)"
                       >
@@ -184,17 +184,34 @@
                         <option v-for="c in match.candidates" :key="c.igdb_id" :value="c.igdb_id">
                           {{ c.title }} {{ c.release_year ? `(${c.release_year})` : '' }}
                         </option>
+                        <option value="__custom__">✏️ Corregir nombre...</option>
                       </select>
 
-                      <!-- Not found: retry with corrected name -->
-                      <div v-if="match.status === 'not_found'" class="retry-row">
+                      <!-- Matched: option to change/edit -->
+                      <button
+                        v-if="match.status === 'matched' && !match.showCustomInput"
+                        class="btn-change"
+                        @click="toggleCustomInput(i)"
+                        title="Cambiar o corregir nombre"
+                      >
+                        ✏️ Editar
+                      </button>
+
+                      <!-- Custom input / Not found: input box to search -->
+                      <div v-if="match.status === 'not_found' || match.showCustomInput" class="retry-row">
                         <input
                           v-model="match.retryQuery"
                           class="retry-input"
                           placeholder="Corrige el título..."
                           @keyup.enter="retryMatch(i)"
                         />
-                        <button class="btn-retry" @click="retryMatch(i)">🔍</button>
+                        <button class="btn-retry" @click="retryMatch(i)" title="Buscar">🔍</button>
+                        <button
+                          v-if="match.candidates.length > 0"
+                          class="btn-cancel-retry"
+                          @click="match.showCustomInput = false"
+                          title="Cancelar"
+                        >✕</button>
                       </div>
 
                       <!-- Skip checkbox -->
@@ -377,6 +394,7 @@ interface MatchEntry {
   selected: IGDBGame | null;
   skipped: boolean;
   retryQuery: string;
+  showCustomInput?: boolean;
   // Conflict / Duplicate detection
   existingId?: string | null;
   conflictAction?: 'overwrite' | 'skip';
@@ -738,11 +756,24 @@ async function searchForMatch(i: number, rawQuery: string) {
 
 
 function selectCandidate(i: number, igdbId: string) {
+  if (igdbId === '__custom__') {
+    matches.value[i].showCustomInput = true;
+    matches.value[i].retryQuery = matches.value[i].row.title;
+    return;
+  }
   const id = parseInt(igdbId, 10);
   const candidate = matches.value[i].candidates.find(c => c.igdb_id === id);
   if (candidate) {
     matches.value[i].selected = candidate;
     matches.value[i].status = 'matched';
+    matches.value[i].showCustomInput = false;
+  }
+}
+
+function toggleCustomInput(i: number) {
+  matches.value[i].showCustomInput = !matches.value[i].showCustomInput;
+  if (matches.value[i].showCustomInput) {
+    matches.value[i].retryQuery = matches.value[i].row.title;
   }
 }
 
@@ -751,6 +782,7 @@ async function retryMatch(i: number) {
   if (!q.trim()) return;
   matches.value[i].status = 'pending';
   matches.value[i].selected = null;
+  matches.value[i].showCustomInput = false;
   await searchForMatch(i, q);
 }
 
@@ -1263,6 +1295,37 @@ function today() {
   transition: border-color 0.2s;
 }
 .btn-retry:hover { border-color: var(--color-accent-primary); }
+
+.btn-change {
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  color: var(--color-text-secondary);
+  font-size: 0.75rem;
+  padding: 0.3rem 0.6rem;
+  cursor: pointer;
+  font-family: var(--font-family-base);
+  transition: all 0.2s;
+}
+.btn-change:hover {
+  border-color: var(--color-accent-primary);
+  color: var(--color-text-primary);
+}
+
+.btn-cancel-retry {
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 0.3rem 0.5rem;
+  font-size: 0.75rem;
+  transition: all 0.2s;
+}
+.btn-cancel-retry:hover {
+  color: var(--color-accent-rose);
+  border-color: var(--color-accent-rose);
+}
 
 .skip-label {
   display: flex;
