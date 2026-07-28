@@ -833,8 +833,9 @@ async function goToConfirmStep() {
       // Map key: igdbId_platform (lowercase)
       const map = new Map<string, string>();
       existingItems.forEach(item => {
-        if (item.game?.igdb_id) {
-          const key = `${item.game.igdb_id}_${item.platform.toLowerCase().trim()}`;
+        const gameId = item.game_id || item.game?.id;
+        if (gameId) {
+          const key = `${gameId}_${item.platform.toLowerCase().trim()}`;
           map.set(key, item.id);
         }
       });
