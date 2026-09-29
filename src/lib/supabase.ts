@@ -160,6 +160,7 @@ export async function clearUserLibraryInDB(userId: string) {
 export async function updateLibraryItemInDB(
   id: string,
   itemData: {
+    game_id?: number;
     platform: string;
     status: 'Pendiente' | 'En curso' | 'Jugado' | 'Abandonado' | 'Prestado';
     start_date: string | null;
@@ -168,14 +169,28 @@ export async function updateLibraryItemInDB(
     rating: number | null;
     notes: string | null;
     lent_to: string | null;
-  }
+  },
+  game?: DBGame
 ) {
+  if (game) {
+    try {
+      await upsertGameSnapshot(game);
+    } catch (err) {
+      console.warn('⚠️ No se pudo guardar la instantánea del juego:', err);
+    }
+  }
+
+  const payload: any = {
+    ...itemData,
+    updated_at: new Date().toISOString(),
+  };
+  if (game) {
+    payload.game_id = game.id;
+  }
+
   const { data, error } = await supabase
     .from('library_items')
-    .update({
-      ...itemData,
-      updated_at: new Date().toISOString(),
-    })
+    .update(payload)
     .eq('id', id)
     .select(`
       *,
