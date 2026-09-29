@@ -108,11 +108,12 @@ export async function requestGoogleDriveAccess(clientId?: string): Promise<strin
   const gClientId =
     clientId ||
     getCustomClientId() ||
+    import.meta.env.GOOGLE_CLIENT_ID ||
     import.meta.env.PUBLIC_GOOGLE_CLIENT_ID;
 
   if (!gClientId || !gClientId.trim()) {
     throw new Error(
-      'Falta la clave Client ID de Google OAuth. Configura PUBLIC_GOOGLE_CLIENT_ID en tu archivo .env o introdúcela en el campo de configuración.'
+      'Falta la clave Client ID de Google OAuth. Configura GOOGLE_CLIENT_ID en tu archivo .env o en Vercel.'
     );
   }
 
