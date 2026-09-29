@@ -17,19 +17,27 @@
         </button>
       </div>
 
-      <!-- ── Móvil: fila compacta con select de estado + ordenación ─── -->
+      <!-- ── Móvil: fila compacta con select de estado + año + ordenación ─── -->
       <div class="filter-row-mobile">
         <select v-model="activeFilter" class="input-field filter-select-mobile">
           <option v-for="tab in statusTabs" :key="tab.value" :value="tab.value">
             {{ tab.icon }} {{ tab.label }} ({{ getCountForStatus(tab.value) }})
           </option>
         </select>
-        <select v-model="sortBy" class="input-field filter-select-mobile">
-          <option value="recent">🕐 Recientes</option>
-          <option value="title">🔤 A-Z</option>
-          <option value="rating">⭐ Valoración</option>
-          <option value="year">📅 Año</option>
+
+        <select v-model="selectedYear" class="input-field filter-select-mobile">
+          <option value="all">📅 Año (Todos)</option>
+          <option v-for="y in availableYears" :key="y" :value="y">{{ y }}</option>
         </select>
+
+        <select v-model="sortBy" class="input-field filter-select-mobile">
+          <option value="recent">🕐 Añadidos</option>
+          <option value="finish_date">🏁 Compleción</option>
+          <option value="title">🔤 A-Z</option>
+          <option value="rating">⭐ Puntuación</option>
+          <option value="year">📅 Año lanzamiento</option>
+        </select>
+
         <button
           class="btn-sort-order"
           @click="sortOrder = sortOrder === 'asc' ? 'desc' : 'asc'"
@@ -39,7 +47,7 @@
         </button>
       </div>
 
-      <!-- ── Búsqueda + Ordenación (desktop) ─── -->
+      <!-- ── Búsqueda + Filtros + Ordenación (desktop) ─── -->
       <div class="filter-controls">
         <input
           v-model="localSearch"
@@ -47,12 +55,22 @@
           class="input-field filter-search"
           placeholder="Filtrar por título..."
         />
+
+        <!-- Selector de Año -->
+        <select v-model="selectedYear" class="input-field filter-select">
+          <option value="all">📅 Todos los años</option>
+          <option v-for="y in availableYears" :key="y" :value="y">{{ y }}</option>
+        </select>
+
+        <!-- Selector de Criterio de Ordenación -->
         <select v-model="sortBy" class="input-field filter-select">
-          <option value="recent">Más recientes</option>
+          <option value="recent">Más recientes (Añadido)</option>
+          <option value="finish_date">🏁 Fecha de compleción</option>
           <option value="title">Título A-Z</option>
           <option value="rating">Mejor valorados</option>
           <option value="year">Año de lanzamiento</option>
         </select>
+
         <button
           class="btn-sort-order"
           @click="sortOrder = sortOrder === 'asc' ? 'desc' : 'asc'"
@@ -100,6 +118,7 @@
           <p class="card-meta">
             <span>{{ item.platform }}</span>
             <span v-if="item.game.release_year"> · {{ item.game.release_year }}</span>
+            <span v-if="item.finish_date" class="finish-date-tag" title="Fecha de compleción"> · 🏁 {{ formatDateShort(item.finish_date) }}</span>
           </p>
 
           <!-- Stars -->
@@ -144,9 +163,11 @@
     <!-- Empty State -->
     <div v-if="filteredItems.length === 0 && !loading" class="empty-state">
       <span style="font-size: 3rem;">📚</span>
-      <h3>Tu biblioteca está vacía</h3>
-      <p v-if="activeFilter === 'all'">Usa el buscador de arriba para encontrar y añadir videojuegos.</p>
-      <p v-else>No tienes juegos con estado "{{ activeFilter }}".</p>
+      <h3>No se encontraron juegos</h3>
+      <p v-if="selectedYear !== 'all' && activeFilter !== 'all'">No tienes juegos en estado "{{ activeFilter }}" para el año {{ selectedYear }}.</p>
+      <p v-else-if="selectedYear !== 'all'">No tienes juegos registrados para el año {{ selectedYear }}.</p>
+      <p v-else-if="activeFilter !== 'all'">No tienes juegos con estado "{{ activeFilter }}".</p>
+      <p v-else>Usa el buscador de arriba para encontrar y añadir videojuegos.</p>
     </div>
 
     <!-- Edit Modal -->
@@ -193,6 +214,7 @@ const BATCH_SIZE = 12;
 const items = ref<LibraryItem[]>([]);
 const activeFilter = ref('all');
 const localSearch = ref('');
+const selectedYear = ref<string>('all');
 const sortBy = ref('recent');
 const sortOrder = ref<'asc' | 'desc'>('desc');
 const currentUser = ref<User | null>(null);
@@ -240,12 +262,48 @@ function getCountForStatus(status: string): number {
   return items.value.filter(i => i.status === status).length;
 }
 
+function formatDateShort(str?: string | null): string {
+  if (!str) return '';
+  try {
+    const parts = str.split('-');
+    if (parts.length === 3) {
+      return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+    return str;
+  } catch {
+    return str;
+  }
+}
+
+// Extract distinct years present in user's library (release years & completion years)
+const availableYears = computed(() => {
+  const yearsSet = new Set<number>();
+  items.value.forEach(item => {
+    if (item.game.release_year) yearsSet.add(item.game.release_year);
+    if (item.finish_date) {
+      const y = new Date(item.finish_date).getFullYear();
+      if (!isNaN(y)) yearsSet.add(y);
+    }
+  });
+  return Array.from(yearsSet).sort((a, b) => b - a);
+});
+
 const filteredItems = computed(() => {
   let result = [...items.value];
 
   // Filter by status
   if (activeFilter.value !== 'all') {
     result = result.filter(i => i.status === activeFilter.value);
+  }
+
+  // Filter by year (release year or completion year)
+  if (selectedYear.value !== 'all') {
+    const targetY = parseInt(selectedYear.value, 10);
+    result = result.filter(i => {
+      const relY = i.game.release_year;
+      const finY = i.finish_date ? new Date(i.finish_date).getFullYear() : null;
+      return relY === targetY || finY === targetY;
+    });
   }
 
   // Filter by local search
@@ -258,6 +316,13 @@ const filteredItems = computed(() => {
   const isAsc = sortOrder.value === 'asc';
 
   switch (sortBy.value) {
+    case 'finish_date':
+      result.sort((a, b) => {
+        const timeA = a.finish_date ? new Date(a.finish_date).getTime() : (isAsc ? Infinity : -Infinity);
+        const timeB = b.finish_date ? new Date(b.finish_date).getTime() : (isAsc ? Infinity : -Infinity);
+        return isAsc ? timeA - timeB : timeB - timeA;
+      });
+      break;
     case 'title':
       result.sort((a, b) => isAsc ? a.game.title.localeCompare(b.game.title) : b.game.title.localeCompare(a.game.title));
       break;
@@ -286,7 +351,7 @@ const hasMore = computed(() => {
 });
 
 // Reset visible count when filters or search change
-watch([activeFilter, localSearch, sortBy, sortOrder, items], () => {
+watch([activeFilter, localSearch, selectedYear, sortBy, sortOrder, items], () => {
   visibleCount.value = BATCH_SIZE;
 });
 
@@ -463,14 +528,16 @@ onUnmounted(() => {
 .filter-controls {
   display: flex;
   gap: 0.75rem;
+  flex-wrap: wrap;
 }
 
 .filter-search {
-  max-width: 300px;
+  max-width: 260px;
+  flex: 1;
 }
 
 .filter-select {
-  max-width: 200px;
+  max-width: 220px;
   appearance: none;
   cursor: pointer;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
@@ -581,6 +648,11 @@ onUnmounted(() => {
   font-size: 0.75rem;
   color: var(--color-text-muted);
   margin-bottom: 0.375rem;
+}
+
+.finish-date-tag {
+  color: var(--color-accent-emerald, #10b981);
+  font-weight: 500;
 }
 
 .card-rating {
