@@ -8,7 +8,7 @@
           <div class="ie-header">
             <div>
               <h2 class="ie-title">📦 Copia de Seguridad & Datos</h2>
-              <p class="ie-subtitle">Exporta, restaura o sincroniza tu biblioteca con Google Drive</p>
+              <p class="ie-subtitle">Exporta, restaura o sincroniza tu biblioteca con Google Drive o CSV/JSON</p>
             </div>
             <button class="ie-close" @click="$emit('close')">✕</button>
           </div>
@@ -24,7 +24,7 @@
               Importar / Restaurar
             </button>
             <button :class="['ie-tab', { active: activeTab === 'gdrive' }]" @click="switchTab('gdrive')">
-              <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 11H5m14 0a2 2 0 0 12 2v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-6a2 2 0 0 12-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
               Google Drive Cloud ☁️
             </button>
           </div>
@@ -99,7 +99,7 @@
 
               <!-- ── STEP 1: Upload or Select Drive ── -->
               <div v-if="importStep === 0" class="step-content">
-                <p class="tab-desc">Restaura una copia de seguridad desde tu <strong>Google Drive</strong> o sube un archivo <strong>.json / .csv</strong> local.</p>
+                <p class="tab-desc">Restaura una copia de seguridad desde <strong>Google Drive</strong> o sube un archivo <strong>.csv / .tsv / .json</strong> local.</p>
 
                 <!-- Google Drive Backups Selector Section -->
                 <div class="gdrive-restore-box">
@@ -147,7 +147,7 @@
                   </div>
                 </div>
 
-                <div class="divider-text"><span>O SUBE UN ARCHIVO LOCAL</span></div>
+                <div class="divider-text"><span>O SUBE UN ARCHIVO LOCAL (.CSV, .TSV, .JSON)</span></div>
 
                 <!-- Drop zone -->
                 <div
@@ -158,19 +158,19 @@
                   @drop.prevent="handleDrop"
                   @click="fileInput?.click()"
                 >
-                  <input ref="fileInput" type="file" accept=".csv,.json" style="display:none" @change="handleFileSelect" />
+                  <input ref="fileInput" type="file" accept=".csv,.tsv,.json" style="display:none" @change="handleFileSelect" />
                   <div class="drop-icon">📂</div>
                   <p class="drop-label">Arrastra tu archivo aquí o <span class="drop-link">haz clic para seleccionarlo</span></p>
-                  <p class="drop-hint">Acepta: .csv (Excel), .json (backup firmado de LibraryTracker)</p>
+                  <p class="drop-hint">Acepta: .csv / .tsv (Excel / Sheets), .json (backup LibraryTracker)</p>
                 </div>
 
                 <div v-if="parseError" class="error-banner">⚠️ {{ parseError }}</div>
 
-                <!-- Diff preview after parse JSON or CSV -->
+                <!-- Preview after parse -->
                 <div v-if="jsonBackupPayload || parsedRows.length > 0" class="parse-preview">
                   <div class="preview-header">
                     <span class="preview-badge">{{ jsonBackupPayload ? jsonBackupPayload.items.length : parsedRows.length }} entradas detectadas</span>
-                    <span class="preview-type" :class="fileType">{{ fileType === 'json' ? '📦 JSON Nativo (SHA-256 verificado)' : '📄 CSV' }}</span>
+                    <span class="preview-type" :class="fileType">{{ fileType === 'json' ? '📦 JSON Nativo (SHA-256 verificado)' : '📄 CSV / TSV' }}</span>
                   </div>
 
                   <!-- Diff summary box for JSON backups -->
@@ -192,6 +192,33 @@
                     </div>
                   </div>
 
+                  <!-- CSV / TSV Step 1 Preview Table -->
+                  <div v-if="fileType === 'csv' && parsedRows.length > 0" class="preview-table-wrap">
+                    <table class="preview-table">
+                      <thead>
+                        <tr>
+                          <th>Título</th>
+                          <th>Plataforma</th>
+                          <th>Estado</th>
+                          <th>Fecha Inicio</th>
+                          <th>Fecha Fin</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr v-for="(row, i) in parsedRows.slice(0, 5)" :key="i">
+                          <td>{{ row.title }}</td>
+                          <td>{{ row.platform }}</td>
+                          <td>{{ row.status }}</td>
+                          <td>{{ row.start_date || '—' }}</td>
+                          <td>{{ row.finish_date || '—' }}</td>
+                        </tr>
+                        <tr v-if="parsedRows.length > 5">
+                          <td colspan="5" class="more-rows">… y {{ parsedRows.length - 5 }} más</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
                   <button class="btn-next" @click="startMatching">
                     {{ fileType === 'json' ? 'Continuar a Configurar Modo de Restauración →' : 'Buscar en IGDB →' }}
                   </button>
@@ -211,7 +238,7 @@
                       <input type="radio" v-model="restoreMode" value="merge" />
                       <div class="mode-info">
                         <strong>🔀 Fusión Inteligente (Merge / Upsert) — Recomendado</strong>
-                        <p>Conserva todos tus juegos actuales, añade los nuevos del backup y actualiza aquellos que hayan cambiado. **Sin riesgo de perder juegos.**</p>
+                        <p>Conserva todos tus juegos actuales, añade los nuevos del backup y actualiza aquellos que hayan cambiado. Sin riesgo de perder juegos.</p>
                       </div>
                     </label>
 
@@ -219,7 +246,7 @@
                       <input type="radio" v-model="restoreMode" value="overwrite" />
                       <div class="mode-info">
                         <strong>⚠️ Reemplazo Completo (Overwrite)</strong>
-                        <p>Elimina todos los datos actuales de tu biblioteca e instala la copia exacta del backup. **Requiere confirmación.**</p>
+                        <p>Elimina todos los datos actuales de tu biblioteca e instala la copia exacta del backup. Requiere confirmación.</p>
                       </div>
                     </label>
                   </div>
@@ -234,7 +261,7 @@
                   </div>
                 </div>
 
-                <!-- If CSV: IGDB Matching step -->
+                <!-- If CSV/TSV: IGDB Matching step -->
                 <div v-else>
                   <div class="matching-header">
                     <p class="tab-desc">Revisando coincidencias en IGDB para cada título de tu archivo.</p>
@@ -332,7 +359,7 @@
                 <!-- Success State -->
                 <div v-if="importDone" class="import-result">
                   <div class="result-icon">🎉</div>
-                  <h3>¡Restauración completada con éxito!</h3>
+                  <h3>¡Importación completada con éxito!</h3>
                   <div class="result-stats">
                     <p v-if="importedCount > 0">✨ <strong>{{ importedCount }}</strong> juegos nuevos añadidos.</p>
                     <p v-if="updatedCount > 0">🔄 <strong>{{ updatedCount }}</strong> juegos existentes actualizados.</p>
@@ -358,7 +385,7 @@
                     </button>
                   </div>
 
-                  <!-- Confirmation summary for CSV -->
+                  <!-- Confirmation summary for CSV / TSV -->
                   <div v-else>
                     <div class="confirm-summary">
                       <div class="confirm-stat primary">
@@ -383,6 +410,7 @@
                             class="btn-clear-lib"
                             @click="handleClearLibrary"
                             :disabled="clearingLibrary"
+                            title="Elimina todos los juegos de tu biblioteca actual para importar todo de cero"
                           >
                             {{ clearingLibrary ? 'Eliminando...' : '🗑 Vaciar biblioteca y re-importar' }}
                           </button>
@@ -405,6 +433,38 @@
                           >
                             🔄 Sobreescribir todos
                           </button>
+                        </div>
+                      </div>
+
+                      <!-- Individual Conflict List -->
+                      <div class="conflict-list">
+                        <div
+                          v-for="item in duplicateMatches"
+                          :key="item.selected?.igdb_id + item.row.platform"
+                          class="conflict-item"
+                        >
+                          <div class="conflict-game-info">
+                            <img v-if="item.selected?.cover_url" :src="item.selected.cover_url" class="conflict-cover" />
+                            <div>
+                              <span class="conflict-name">{{ item.selected?.title }}</span>
+                              <span class="conflict-platform">({{ item.row.platform }})</span>
+                            </div>
+                          </div>
+
+                          <div class="conflict-item-action">
+                            <button
+                              :class="['action-chip', { active: item.conflictAction === 'skip' }]"
+                              @click="item.conflictAction = 'skip'"
+                            >
+                              Omitir
+                            </button>
+                            <button
+                              :class="['action-chip danger', { active: item.conflictAction === 'overwrite' }]"
+                              @click="item.conflictAction = 'overwrite'"
+                            >
+                              Sobreescribir
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -747,8 +807,31 @@ async function processFile(file: File) {
   try {
     const text = await file.text();
     if (ext === 'json') {
-      const raw = JSON.parse(text);
-      await processParsedJSON(raw);
+      try {
+        const raw = JSON.parse(text);
+        await processParsedJSON(raw);
+      } catch (e: any) {
+        if (e.message && e.message.includes('JSON')) throw e;
+        // Fallback for legacy simple JSON array
+        const rawArray = JSON.parse(text);
+        const items = Array.isArray(rawArray) ? rawArray : rawArray.items ?? [];
+        if (!items.length) throw new Error('El JSON no contiene entradas válidas.');
+        parsedRows.value = items.map((item: any) => ({
+          title: item.game?.title ?? item.title,
+          platform: normalizePlatform(item.platform),
+          status: item.status,
+          start_date: item.start_date ?? null,
+          finish_date: item.finish_date ?? null,
+          rating: item.rating ?? null,
+          playtime_hours: item.playtime_hours ?? 0,
+          notes: item.notes ?? null,
+          igdb_id: item.game?.igdb_id ?? item.igdb_id,
+          cover_url: item.game?.cover_url ?? item.cover_url,
+          genres: item.game?.genres ?? [],
+          developers: item.game?.developers ?? [],
+        }));
+        fileType.value = 'json';
+      }
     } else {
       parsedRows.value = parseCSV(text);
       fileType.value = 'csv';
@@ -761,6 +844,25 @@ async function processFile(file: File) {
 async function processParsedJSON(rawObj: any) {
   const validation = await validateBackupPayload(rawObj);
   if (!validation.valid || !validation.payload) {
+    const items = Array.isArray(rawObj) ? rawObj : rawObj.items;
+    if (Array.isArray(items) && items.length > 0) {
+      fileType.value = 'json';
+      parsedRows.value = items.map((item: any) => ({
+        title: item.game?.title ?? item.title,
+        platform: normalizePlatform(item.platform),
+        status: item.status,
+        start_date: item.start_date ?? null,
+        finish_date: item.finish_date ?? null,
+        rating: item.rating ?? null,
+        playtime_hours: item.playtime_hours ?? 0,
+        notes: item.notes ?? null,
+        igdb_id: item.game?.igdb_id ?? item.igdb_id,
+        cover_url: item.game?.cover_url ?? item.cover_url,
+        genres: item.game?.genres ?? [],
+        developers: item.game?.developers ?? [],
+      }));
+      return;
+    }
     throw new Error(validation.error || 'Formato JSON no válido.');
   }
 
@@ -830,15 +932,151 @@ async function runJsonRestore() {
   }
 }
 
-// ── CSV Matching & Helpers ───────────────────────────
+// ── Matching & CSV Helpers ───────────────────────────
+function normalizeTitle(t: string) {
+  return t.toLowerCase().replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ').trim();
+}
+
+function titleSimilarity(a: string, b: string): number {
+  const na = normalizeTitle(a);
+  const nb = normalizeTitle(b);
+  if (na === nb) return 1;
+  if (na.includes(nb) || nb.includes(na)) return 0.85;
+  return 0;
+}
+
+function parseDate(raw: string): string | null {
+  if (!raw) return null;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+  const m = raw.match(/^(\d{1,2})[/\-.](\d{1,2})[/\-.](\d{4})$/);
+  if (m) return `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+  const m2 = raw.match(/^(\d{1,2})[/\-.](\d{1,2})[/\-.](\d{4})$/);
+  if (m2) return `${m2[3]}-${m2[1].padStart(2, '0')}-${m2[2].padStart(2, '0')}`;
+  return null;
+}
+
+function parseStatusField(raw: string, hasFinishDate: boolean): GameStatus {
+  const s = raw?.trim().toLowerCase();
+  if (s === 'jugado' || s === 'completed' || s === 'finished') return 'Jugado';
+  if (s === 'en curso' || s === 'playing') return 'En curso';
+  if (s === 'abandonado' || s === 'dropped') return 'Abandonado';
+  if (s === 'prestado' || s === 'lent') return 'Prestado';
+  if (s === 'pendiente' || s === 'pending') return 'Pendiente';
+  return hasFinishDate ? 'Jugado' : 'Pendiente';
+}
+
+function normalizePlatform(raw: string): string {
+  if (!raw) return 'PC';
+  const clean = raw.trim();
+  const lower = clean.toLowerCase();
+
+  if (lower === 'gameboy' || lower === 'gb') return 'Game Boy';
+  if (lower === 'gameboy color' || lower === 'gbc') return 'Game Boy Color';
+  if (lower === 'gameboy advance' || lower === 'gba') return 'Game Boy Advance';
+  if (lower === 'game cube' || lower === 'gc' || lower === 'gamecube') return 'GameCube';
+  if (lower === 'nintendo ds' || lower === 'nds' || lower === 'ds') return 'Nintendo DS';
+  if (lower === 'nintendo 3ds' || lower === '3ds') return 'Nintendo 3DS';
+  if (lower === 'ps1' || lower === 'psx' || lower === 'playstation 1') return 'PlayStation';
+  if (lower === 'ps2' || lower === 'playstation 2') return 'PlayStation 2';
+  if (lower === 'ps3' || lower === 'playstation 3') return 'PlayStation 3';
+  if (lower === 'ps4' || lower === 'playstation 4') return 'PlayStation 4';
+  if (lower === 'ps5' || lower === 'playstation 5') return 'PlayStation 5';
+  if (lower === 'switch' || lower === 'nintendo switch') return 'Nintendo Switch';
+  if (lower === 'snes' || lower === 'super nintendo') return 'SNES';
+  if (lower === 'nes') return 'NES';
+
+  return clean;
+}
+
+function sanitizeTitleForSearch(raw: string): string {
+  let cleaned = raw.trim();
+  cleaned = cleaned.replace(/\s+x\s*\d+$/i, '');
+  cleaned = cleaned.replace(/\s*\+\s*(expansions|dlc|expansion).*$/i, '');
+  cleaned = cleaned.replace(/\s+:\s+/g, ': ');
+  return cleaned.trim();
+}
+
+function parseCSVLine(line: string, delimiter: string): string[] {
+  const result: string[] = [];
+  let current = '';
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    if (line[i] === '"') {
+      inQuotes = !inQuotes;
+    } else if (line[i] === delimiter && !inQuotes) {
+      result.push(current);
+      current = '';
+    } else {
+      current += line[i];
+    }
+  }
+  result.push(current);
+  return result;
+}
+
+function parseCSV(text: string): ParsedRow[] {
+  const lines = text.trim().split(/\r?\n/);
+  if (lines.length < 2) throw new Error('El CSV/TSV debe tener al menos una fila de datos.');
+
+  const delimiters = [',', ';', '\t'];
+  let delimiter = ',';
+  let maxCols = 0;
+  for (const d of delimiters) {
+    const cols = lines[0].split(d).length;
+    if (cols > maxCols) { maxCols = cols; delimiter = d; }
+  }
+
+  const headers = parseCSVLine(lines[0], delimiter).map(h =>
+    h.trim().toLowerCase().replace(/[^a-z0-9 _]/gi, '').trim()
+  );
+
+  const getCol = (row: string[], keys: string[]): string => {
+    for (const k of keys) {
+      const idx = headers.indexOf(k);
+      if (idx !== -1 && row[idx]) return row[idx].trim();
+    }
+    return '';
+  };
+
+  return lines.slice(1)
+    .filter(l => l.trim())
+    .map(line => {
+      const cols = parseCSVLine(line, delimiter);
+      const title = getCol(cols, ['titulo', 'nombre', 'title', 'name', 'juego', 'game']);
+      if (!title) return null;
+
+      const startRaw = getCol(cols, ['fecha inicio', 'fecha_inicio', 'start_date', 'inicio', 'started']);
+      const start_date = parseDate(startRaw);
+      const finishRaw = getCol(cols, ['fecha fin', 'fecha_fin', 'finish_date', 'fecha', 'date', 'completado']);
+      const finish_date = parseDate(finishRaw);
+      const statusRaw = getCol(cols, ['estado', 'status', 'state']);
+      const platformRaw = getCol(cols, ['plataforma', 'platform', 'plat']);
+      const platform = normalizePlatform(platformRaw);
+      const ratingRaw = getCol(cols, ['puntuacion', 'rating', 'nota', 'score', 'stars']);
+      const hoursRaw = getCol(cols, ['horas', 'hours', 'tiempo', 'playtime']);
+      const notes = getCol(cols, ['notas', 'notes', 'resena', 'comentario', 'comment']) || null;
+
+      return {
+        title,
+        platform,
+        status: parseStatusField(statusRaw, !!finish_date),
+        start_date,
+        finish_date,
+        rating: ratingRaw ? Math.min(5, parseFloat(ratingRaw)) || null : null,
+        playtime_hours: hoursRaw ? parseFloat(hoursRaw) || 0 : 0,
+        notes,
+      } as ParsedRow;
+    })
+    .filter(Boolean) as ParsedRow[];
+}
+
 async function startMatching() {
   importStep.value = 1;
   matchingDone.value = false;
   matchedCount.value = 0;
 
   if (fileType.value === 'json') {
-    importStep.value = 1; // Shows restore mode selection screen
-    return;
+    return; // JSON uses Step 1 mode selection
   }
 
   matches.value = parsedRows.value.map(row => ({
@@ -866,15 +1104,50 @@ async function searchForMatch(i: number, rawQuery: string) {
     let res = await fetch(`/api/igdb/search?q=${encodeURIComponent(cleanQuery)}&limit=15&lang=${lang}`);
     let results: IGDBGame[] = await res.json();
 
+    if (!results.length && cleanQuery !== rawQuery) {
+      res = await fetch(`/api/igdb/search?q=${encodeURIComponent(rawQuery)}&limit=15&lang=${lang}`);
+      results = await res.json();
+    }
+
+    if (!results.length && cleanQuery.includes(':')) {
+      const baseTitle = cleanQuery.split(':')[0].trim();
+      res = await fetch(`/api/igdb/search?q=${encodeURIComponent(baseTitle)}&limit=15&lang=${lang}`);
+      results = await res.json();
+    }
+
     if (!results.length) {
       matches.value[i].status = 'not_found';
       return;
     }
 
+    results.sort((a, b) => {
+      const isExactA = cleanQuery.toLowerCase() === a.title.toLowerCase();
+      const isExactB = cleanQuery.toLowerCase() === b.title.toLowerCase();
+      if (isExactA && !isExactB) return -1;
+      if (!isExactA && isExactB) return 1;
+
+      const simA = titleSimilarity(cleanQuery, a.title);
+      const simB = titleSimilarity(cleanQuery, b.title);
+      const lenDiffA = Math.abs(a.title.length - cleanQuery.length);
+      const lenDiffB = Math.abs(b.title.length - cleanQuery.length);
+
+      if (Math.abs(simA - simB) > 0.08) {
+        return simB - simA;
+      }
+      return lenDiffA - lenDiffB;
+    });
+
     const top = results[0];
-    matches.value[i].status = 'matched';
-    matches.value[i].selected = top;
-    matches.value[i].candidates = results;
+    const sim = titleSimilarity(cleanQuery, top.title);
+
+    if (sim >= 0.85 || results.length === 1) {
+      matches.value[i].status = 'matched';
+      matches.value[i].selected = top;
+      matches.value[i].candidates = results;
+    } else {
+      matches.value[i].status = 'ambiguous';
+      matches.value[i].candidates = results;
+    }
   } catch {
     matches.value[i].status = 'not_found';
   }
@@ -883,6 +1156,7 @@ async function searchForMatch(i: number, rawQuery: string) {
 function selectCandidate(i: number, igdbId: string) {
   if (igdbId === '__custom__') {
     matches.value[i].showCustomInput = true;
+    matches.value[i].retryQuery = matches.value[i].row.title;
     return;
   }
   const id = parseInt(igdbId, 10);
@@ -1082,49 +1356,6 @@ function statusLabel(s: string) {
   return 'Buscando…';
 }
 
-function normalizeTitle(t: string) {
-  return t.toLowerCase().replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ').trim();
-}
-
-function parseStatusField(raw: string, hasFinishDate: boolean): GameStatus {
-  const s = raw?.trim().toLowerCase();
-  if (s === 'jugado' || s === 'completed') return 'Jugado';
-  if (s === 'en curso' || s === 'playing') return 'En curso';
-  if (s === 'abandonado' || s === 'dropped') return 'Abandonado';
-  if (s === 'prestado' || s === 'lent') return 'Prestado';
-  return hasFinishDate ? 'Jugado' : 'Pendiente';
-}
-
-function normalizePlatform(raw: string): string {
-  if (!raw) return 'PC';
-  return raw.trim();
-}
-
-function sanitizeTitleForSearch(raw: string): string {
-  return raw.replace(/\s+x\s*\d+$/i, '').trim();
-}
-
-function parseCSV(text: string): ParsedRow[] {
-  const lines = text.trim().split(/\r?\n/);
-  if (lines.length < 2) throw new Error('El CSV debe tener al menos una fila de datos.');
-  const headers = lines[0].split(';').map(h => h.trim().toLowerCase());
-
-  return lines.slice(1).map(l => {
-    const cols = l.split(';');
-    if (!cols[0]) return null;
-    return {
-      title: cols[0].replace(/^"|"$/g, ''),
-      platform: cols[1] || 'PC',
-      status: parseStatusField(cols[2], !!cols[4]),
-      start_date: cols[3] || null,
-      finish_date: cols[4] || null,
-      rating: parseFloat(cols[5]) || null,
-      playtime_hours: parseFloat(cols[6]) || 0,
-      notes: cols[7] || null,
-    } as ParsedRow;
-  }).filter(Boolean) as ParsedRow[];
-}
-
 function csvEscape(val: any): string {
   const str = val === null || val === undefined ? '' : String(val);
   if (str.includes(';') || str.includes('"') || str.includes('\n')) {
@@ -1167,7 +1398,7 @@ function today() {
   border: 1px solid var(--color-border, #30363d);
   border-radius: 18px;
   width: 100%;
-  max-width: 720px;
+  max-width: 760px;
   max-height: 90vh;
   display: flex;
   flex-direction: column;
@@ -1285,6 +1516,140 @@ function today() {
 .drop-link { color: #58a6ff; font-weight: 600; }
 .drop-hint { font-size: 0.75rem; color: #8b949e; }
 
+/* Preview Table */
+.preview-table-wrap {
+  overflow-x: auto;
+  margin-top: 1rem;
+  border-radius: 10px;
+  border: 1px solid #30363d;
+}
+.preview-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+.preview-table th {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 0.6rem 0.8rem;
+  text-align: left;
+  color: #8b949e;
+  border-bottom: 1px solid #30363d;
+}
+.preview-table td {
+  padding: 0.55rem 0.8rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+.more-rows {
+  text-align: center;
+  color: #8b949e;
+  font-style: italic;
+}
+
+/* Matches List */
+.matching-header { margin-bottom: 1rem; }
+.matching-progress { display: flex; align-items: center; gap: 0.75rem; margin-top: 0.5rem; }
+.progress-bar { flex: 1; height: 8px; background: #30363d; border-radius: 4px; overflow: hidden; }
+.progress-fill { height: 100%; background: #58a6ff; transition: width 0.3s; }
+.progress-label { font-size: 0.8rem; font-weight: 700; color: #8b949e; }
+
+.matches-list { display: flex; flex-direction: column; gap: 0.75rem; max-height: 45vh; overflow-y: auto; padding-right: 0.25rem; }
+.match-row {
+  display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem;
+  background: rgba(255, 255, 255, 0.02); border: 1px solid #30363d; border-radius: 10px;
+}
+.match-row.matched { border-color: rgba(35, 134, 54, 0.4); }
+.match-row.ambiguous { border-color: rgba(210, 153, 34, 0.4); }
+.match-row.not_found { border-color: rgba(248, 81, 73, 0.4); }
+
+.match-status-dot { font-size: 1rem; flex-shrink: 0; }
+.match-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.2rem; }
+.match-query { font-weight: 700; font-size: 0.9rem; }
+.match-result { display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem; color: #58a6ff; }
+.match-cover { width: 22px; height: 30px; object-fit: cover; border-radius: 3px; }
+.match-name { font-weight: 600; }
+.match-year { color: #8b949e; font-size: 0.75rem; }
+.match-not-found { font-size: 0.775rem; color: #f85149; }
+
+.match-controls { display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; }
+.match-select {
+  background: #0d1117; border: 1px solid #30363d; color: #f0f6fc; padding: 0.4rem 0.6rem;
+  border-radius: 6px; font-size: 0.8rem; max-width: 200px;
+}
+.retry-row { display: flex; align-items: center; gap: 0.35rem; }
+.retry-input {
+  background: #0d1117; border: 1px solid #30363d; color: #f0f6fc; padding: 0.35rem 0.5rem;
+  border-radius: 6px; font-size: 0.8rem; width: 140px;
+}
+.btn-retry { background: #58a6ff; color: #0d1117; border: none; padding: 0.35rem 0.5rem; border-radius: 6px; cursor: pointer; font-size: 0.8rem; }
+.btn-cancel-retry { background: none; border: 1px solid #30363d; color: #8b949e; padding: 0.35rem 0.5rem; border-radius: 6px; cursor: pointer; font-size: 0.8rem; }
+
+.skip-label { display: flex; align-items: center; gap: 0.3rem; font-size: 0.75rem; color: #8b949e; cursor: pointer; }
+
+/* Matching summary & actions */
+.matching-actions { border-top: 1px solid #30363d; padding-top: 1rem; margin-top: 0.5rem; }
+.matching-summary { display: flex; flex-wrap: wrap; gap: 1rem; margin-bottom: 0.75rem; font-size: 0.8rem; }
+.s-green { color: #3fb950; font-weight: 600; }
+.s-yellow { color: #d29922; font-weight: 600; }
+.s-red { color: #f85149; font-weight: 600; }
+.s-skip { color: #8b949e; }
+
+/* Confirm step */
+.confirm-summary { display: flex; gap: 1rem; margin-bottom: 1rem; }
+.confirm-stat {
+  flex: 1; display: flex; flex-direction: column; padding: 0.85rem 1rem;
+  background: rgba(255, 255, 255, 0.02); border-radius: 12px; border: 1px solid #30363d;
+}
+.confirm-stat.primary { border-color: #58a6ff; }
+.confirm-stat.warning { border-color: rgba(210, 153, 34, 0.4); background: rgba(210, 153, 34, 0.05); }
+.confirm-stat.warning .confirm-number { color: #d29922; }
+.confirm-number { font-size: 1.6rem; font-weight: 800; color: #58a6ff; }
+.confirm-stat.muted .confirm-number { color: #8b949e; }
+.confirm-label { font-size: 0.75rem; color: #8b949e; margin-top: 0.1rem; }
+
+/* Conflict Box */
+.conflict-box {
+  background: rgba(210, 153, 34, 0.04); border: 1px solid rgba(210, 153, 34, 0.3);
+  border-radius: 14px; padding: 1.25rem; margin-bottom: 1rem;
+}
+.conflict-header { display: flex; flex-direction: column; gap: 0.35rem; margin-bottom: 1rem; }
+.conflict-title-row { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap; }
+.conflict-title { font-size: 0.9rem; font-weight: 700; color: #d29922; }
+.btn-clear-lib {
+  padding: 0.35rem 0.75rem; border-radius: 8px; border: 1px solid #f85149; background: rgba(248, 81, 73, 0.1);
+  color: #f85149; font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: all 0.2s;
+}
+.btn-clear-lib:hover:not(:disabled) { background: #f85149; color: #fff; }
+.conflict-desc { font-size: 0.75rem; color: #8b949e; }
+
+.conflict-bulk-actions {
+  display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.75rem;
+  background: rgba(0, 0, 0, 0.2); border-radius: 10px; margin-bottom: 1rem; border: 1px solid #30363d;
+}
+.bulk-label { font-size: 0.8rem; font-weight: 600; color: #c9d1d9; }
+.bulk-buttons { display: flex; gap: 0.5rem; }
+.bulk-btn {
+  padding: 0.375rem 0.75rem; border-radius: 8px; border: 1px solid #30363d; background: #0d1117;
+  color: #8b949e; font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: all 0.2s;
+}
+.bulk-btn.active { background: #58a6ff; border-color: #58a6ff; color: #0d1117; }
+
+.conflict-list { display: flex; flex-direction: column; gap: 0.5rem; max-height: 25vh; overflow-y: auto; }
+.conflict-item {
+  display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.6rem 0.75rem;
+  background: rgba(255, 255, 255, 0.03); border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.05);
+}
+.conflict-game-info { display: flex; align-items: center; gap: 0.5rem; min-width: 0; }
+.conflict-cover { width: 24px; height: 32px; object-fit: cover; border-radius: 3px; flex-shrink: 0; }
+.conflict-name { font-size: 0.8rem; font-weight: 600; color: #f0f6fc; }
+.conflict-platform { font-size: 0.75rem; color: #8b949e; margin-left: 0.3rem; }
+.conflict-item-action { display: flex; gap: 0.375rem; flex-shrink: 0; }
+.action-chip {
+  padding: 0.25rem 0.5rem; border-radius: 6px; border: 1px solid #30363d; background: none;
+  color: #8b949e; font-size: 0.7rem; font-weight: 600; cursor: pointer; transition: all 0.15s;
+}
+.action-chip.active { background: #58a6ff; border-color: #58a6ff; color: #0d1117; }
+.action-chip.danger.active { background: #f85149; border-color: #f85149; color: #fff; }
+
 /* Diff Summary Card */
 .diff-summary-card {
   background: rgba(56, 139, 253, 0.08); border: 1px solid rgba(56, 139, 253, 0.3); border-radius: 12px; padding: 1rem; margin-top: 1rem;
@@ -1310,12 +1675,22 @@ function today() {
   background: rgba(248, 81, 73, 0.15); border: 1px solid rgba(248, 81, 73, 0.4); border-radius: 8px; padding: 0.8rem; font-size: 0.825rem; color: #ff7b72;
 }
 
+/* Import Result */
+.import-result { text-align: center; padding: 2rem 1rem; }
+.result-icon { font-size: 3rem; margin-bottom: 0.75rem; }
+.import-result h3 { font-size: 1.2rem; font-weight: 800; margin: 0 0 0.75rem 0; }
+.result-stats { display: flex; flex-direction: column; gap: 0.375rem; margin-bottom: 1.25rem; font-size: 0.9rem; }
+.result-stats p { margin: 0; color: #c9d1d9; }
+.result-note { font-size: 0.8rem; color: #8b949e !important; }
+
 .btn-next {
   width: 100%; background: #238636; color: #fff; border: none; padding: 0.8rem; border-radius: 10px; font-weight: 700; cursor: pointer; font-size: 0.95rem; margin-top: 1rem;
 }
 .btn-next:hover { background: #2ea043; }
+.btn-next:disabled { opacity: 0.5; cursor: not-allowed; }
 .btn-next.big-btn { font-size: 1.05rem; padding: 1rem; }
 .btn-back { background: none; border: none; color: #8b949e; cursor: pointer; padding: 0.5rem; text-align: center; }
+.btn-back:hover { color: #f0f6fc; }
 
 /* Google Drive Settings Tab */
 .gdrive-banner-hero { display: flex; gap: 1rem; align-items: center; background: rgba(255, 255, 255, 0.02); padding: 1.2rem; border-radius: 12px; border: 1px solid #30363d; }
@@ -1345,12 +1720,19 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
 .error-banner { background: rgba(248, 81, 73, 0.15); color: #ff7b72; padding: 0.75rem; border-radius: 8px; font-size: 0.85rem; margin-top: 0.5rem; }
 .rot-badge { background: rgba(56, 139, 253, 0.15); color: #58a6ff; padding: 0.25rem 0.6rem; border-radius: 6px; font-size: 0.75rem; font-weight: 700; }
 
-.flex-col { flex-direction: column; }
-.align-start { align-items: flex-start; }
-.client-id-header { display: flex; width: 100%; justify-content: space-between; align-items: center; }
-.btn-toggle-clientid { background: none; border: none; color: #58a6ff; cursor: pointer; font-size: 0.8rem; text-decoration: underline; }
-.client-id-input-group { display: flex; gap: 0.5rem; width: 100%; margin-top: 0.5rem; }
-.client-id-input { flex: 1; background: rgba(0, 0, 0, 0.3); border: 1px solid #30363d; color: #f0f6fc; padding: 0.45rem 0.75rem; border-radius: 6px; font-size: 0.8rem; }
-.btn-save-clientid { background: #238636; color: #fff; border: none; padding: 0.45rem 0.8rem; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 0.8rem; }
-.btn-save-clientid:hover { background: #2ea043; }
+.spinner { animation: spin 1s linear infinite; display: inline-block; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.ie-fade-enter-active, .ie-fade-leave-active { transition: opacity 0.2s ease; }
+.ie-fade-enter-from, .ie-fade-leave-to { opacity: 0; }
+
+@media (max-width: 640px) {
+  .ie-container { max-height: 95vh; }
+  .ie-body { padding: 1rem; }
+  .export-card { flex-wrap: wrap; }
+  .match-row { flex-wrap: wrap; }
+  .match-controls { width: 100%; flex-direction: row; flex-wrap: wrap; }
+  .confirm-summary { flex-direction: column; }
+  .conflict-bulk-actions { flex-direction: column; align-items: flex-start; }
+}
 </style>
