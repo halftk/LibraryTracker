@@ -1,4 +1,47 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="128" fill="#6d28d9"/>
-  <path fill="#ffffff" d="M368 160H144c-44.2 0-80 35.8-80 80v32c0 44.2 35.8 80 80 80h16c17.7 0 32-14.3 32-32v-16c0-8.8 7.2-16 16-16h96c8.8 0 16 7.2 16 16v16c0 17.7 14.3 32 32 32h16c44.2 0 80-35.8 80-80v-32c0-44.2-35.8-80-80-80zm-176 96h-16v16c0 4.4-3.6 8-8 8s-8-3.6-8-8v-16h-16c-4.4 0-8-3.6-8-8s3.6-8 8-8h16v-16c0-4.4 3.6-8 8-8s8 3.6 8 8v16h16c4.4 0 8 3.6 8 8s-3.6 8-8 8zm144 16c-8.8 0-16-7.2-16-16s7.2-16 16-16 16 7.2 16 16-7.2 16-16 16zm32-32c-8.8 0-16-7.2-16-16s7.2-16 16-16 16 7.2 16 16-7.2 16-16 16z"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="controllerGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8b5cf6" />
+      <stop offset="50%" stop-color="#6d28d9" />
+      <stop offset="100%" stop-color="#4c1d95" />
+    </linearGradient>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#181825" />
+      <stop offset="100%" stop-color="#0f0f17" />
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="12" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Dark Rounded Container -->
+  <rect width="512" height="512" rx="120" fill="url(#bgGradient)" />
+  <rect width="504" height="504" x="4" y="4" rx="116" fill="none" stroke="#8b5cf6" stroke-opacity="0.3" stroke-width="8" />
+
+  <!-- Gamepad / Mando Body -->
+  <g filter="url(#glow)">
+    <path fill="url(#controllerGradient)" d="M368 144H144c-53 0-96 43-96 96v48c0 48 35.5 87.7 82.3 94.8 19 2.9 37.7-7.8 45.4-25.2l12.6-28.3c7.5-16.9 24.3-27.7 42.9-27.7h61.6c18.6 0 35.4 10.8 42.9 27.7l12.6 28.3c7.7 17.4 26.4 28.1 45.4 25.2C432.5 375.7 468 336 468 288v-48c0-53-43-96-96-96z"/>
+    
+    <!-- D-PAD (Cruceta izquierda) -->
+    <path fill="#ffffff" opacity="0.95" d="M152 208h-16v-16c0-6.6-5.4-12-12-12s-12 5.4-12 12v16H96c-6.6 0-12 5.4-12 12s5.4 12 12 12h16v16c0 6.6 5.4 12 12 12s12-5.4 12-12v-16h16c6.6 0 12-5.4 12-12s-5.4-12-12-12z"/>
+
+    <!-- Action Buttons (Botones derechos) -->
+    <!-- Button Top (Yellow) -->
+    <circle cx="360" cy="196" r="13" fill="#facc15"/>
+    <!-- Button Right (Red) -->
+    <circle cx="392" cy="228" r="13" fill="#ef4444"/>
+    <!-- Button Bottom (Green) -->
+    <circle cx="360" cy="260" r="13" fill="#22c55e"/>
+    <!-- Button Left (Blue) -->
+    <circle cx="328" cy="228" r="13" fill="#3b82f6"/>
+
+    <!-- Joysticks / Joysticks analógicos -->
+    <circle cx="192" cy="272" r="28" fill="#1e1b4b" stroke="#a78bfa" stroke-width="5"/>
+    <circle cx="320" cy="272" r="28" fill="#1e1b4b" stroke="#a78bfa" stroke-width="5"/>
+
+    <!-- Center Options Buttons -->
+    <rect x="230" y="210" width="20" height="8" rx="4" fill="#a78bfa"/>
+    <rect x="262" y="210" width="20" height="8" rx="4" fill="#a78bfa"/>
+  </g>
 </svg>
