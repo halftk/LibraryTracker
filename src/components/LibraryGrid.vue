@@ -31,7 +31,7 @@
         </select>
 
         <select v-model="sortBy" class="input-field filter-select-mobile">
-          <option value="recent">🕐 Añadidos</option>
+          <option value="recent">⚡ Predeterminado</option>
           <option value="finish_date">🏁 Compleción</option>
           <option value="title">🔤 A-Z</option>
           <option value="rating">⭐ Puntuación</option>
@@ -64,7 +64,7 @@
 
         <!-- Selector de Criterio de Ordenación -->
         <select v-model="sortBy" class="input-field filter-select">
-          <option value="recent">Más recientes (Añadido)</option>
+          <option value="recent">⚡ Predeterminado (Pendientes + Recién completados)</option>
           <option value="finish_date">🏁 Fecha de compleción</option>
           <option value="title">Título A-Z</option>
           <option value="rating">Mejor valorados</option>
@@ -275,6 +275,15 @@ function formatDateShort(str?: string | null): string {
   }
 }
 
+function getStatusPriority(status: string): number {
+  if (status === 'En curso') return 1;
+  if (status === 'Pendiente') return 2;
+  if (status === 'Jugado') return 3;
+  if (status === 'Prestado') return 4;
+  if (status === 'Abandonado') return 5;
+  return 6;
+}
+
 // Extract distinct years present in user's library (release years & completion years)
 const availableYears = computed(() => {
   const yearsSet = new Set<number>();
@@ -334,7 +343,28 @@ const filteredItems = computed(() => {
       break;
     case 'recent':
     default:
-      result.sort((a, b) => isAsc ? new Date(a.created_at).getTime() - new Date(b.created_at).getTime() : new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      // Default order:
+      // 1. En curso / Pendientes first
+      // 2. Jugados ordered by finish_date descending (most recently completed first)
+      // 3. Other statuses ordered by created_at / finish_date
+      result.sort((a, b) => {
+        const prioA = getStatusPriority(a.status);
+        const prioB = getStatusPriority(b.status);
+
+        if (prioA !== prioB) {
+          return isAsc ? prioB - prioA : prioA - prioB;
+        }
+
+        if (a.status === 'Jugado') {
+          const timeA = a.finish_date ? new Date(a.finish_date).getTime() : 0;
+          const timeB = b.finish_date ? new Date(b.finish_date).getTime() : 0;
+          return isAsc ? timeA - timeB : timeB - timeA;
+        }
+
+        const timeA = new Date(a.created_at).getTime();
+        const timeB = new Date(b.created_at).getTime();
+        return isAsc ? timeA - timeB : timeB - timeA;
+      });
       break;
   }
 
@@ -537,7 +567,7 @@ onUnmounted(() => {
 }
 
 .filter-select {
-  max-width: 220px;
+  max-width: 280px;
   appearance: none;
   cursor: pointer;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
