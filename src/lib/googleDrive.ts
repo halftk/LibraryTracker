@@ -105,11 +105,23 @@ export function setCustomClientId(clientId: string) {
  * Abre el popup oficial de Google OAuth para solicitar acceso a appDataFolder
  */
 export async function requestGoogleDriveAccess(clientId?: string): Promise<string> {
-  const gClientId =
+  let gClientId =
     clientId ||
     getCustomClientId() ||
     import.meta.env.GOOGLE_CLIENT_ID ||
     import.meta.env.PUBLIC_GOOGLE_CLIENT_ID;
+
+  if (!gClientId) {
+    try {
+      const res = await fetch('/api/config/google-client-id');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.clientId) gClientId = data.clientId;
+      }
+    } catch {
+      // Fallback
+    }
+  }
 
   if (!gClientId || !gClientId.trim()) {
     throw new Error(
