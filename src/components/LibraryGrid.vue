@@ -71,11 +71,10 @@
       />
     </div>
 
-
     <!-- Grid -->
     <TransitionGroup name="grid" tag="div" class="library-grid">
       <div
-        v-for="item in filteredItems"
+        v-for="item in displayedItems"
         :key="item.id"
         class="game-card card"
       >
@@ -131,8 +130,19 @@
       </div>
     </TransitionGroup>
 
+    <!-- Infinite Scroll Sentinel / Load More Indicator -->
+    <div ref="scrollSentinel" class="scroll-sentinel">
+      <div v-if="hasMore" class="loading-more" @click="loadMore" title="Haz clic para cargar más manualmente">
+        <span class="spinner">⏳</span>
+        <span>Cargando más juegos... ({{ displayedItems.length }} de {{ filteredItems.length }})</span>
+      </div>
+      <div v-else-if="filteredItems.length > BATCH_SIZE" class="end-of-list">
+        <span>✓ Se han cargado todos los juegos ({{ filteredItems.length }})</span>
+      </div>
+    </div>
+
     <!-- Empty State -->
-    <div v-if="filteredItems.length === 0" class="empty-state">
+    <div v-if="filteredItems.length === 0 && !loading" class="empty-state">
       <span style="font-size: 3rem;">📚</span>
       <h3>Tu biblioteca está vacía</h3>
       <p v-if="activeFilter === 'all'">Usa el buscador de arriba para encontrar y añadir videojuegos.</p>
@@ -151,7 +161,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import { supabase, getLibraryItems, deleteLibraryItemFromDB } from '../lib/supabase';
 import type { User } from '@supabase/supabase-js';
 import AddGameModal from './AddGameModal.vue';
@@ -178,6 +188,8 @@ interface LibraryItem {
   created_at: string;
 }
 
+const BATCH_SIZE = 12;
+
 const items = ref<LibraryItem[]>([]);
 const activeFilter = ref('all');
 const localSearch = ref('');
@@ -186,6 +198,11 @@ const sortOrder = ref<'asc' | 'desc'>('desc');
 const currentUser = ref<User | null>(null);
 const loading = ref(true);
 const editingItem = ref<any>(null);
+
+// Pagination / Infinite Scroll state
+const visibleCount = ref(BATCH_SIZE);
+const scrollSentinel = ref<HTMLElement | null>(null);
+let observer: IntersectionObserver | null = null;
 
 const statusTabs = [
   { value: 'all', label: 'Todos', icon: '📚' },
@@ -258,6 +275,44 @@ const filteredItems = computed(() => {
 
   return result;
 });
+
+// Paginated items to display
+const displayedItems = computed(() => {
+  return filteredItems.value.slice(0, visibleCount.value);
+});
+
+const hasMore = computed(() => {
+  return visibleCount.value < filteredItems.value.length;
+});
+
+// Reset visible count when filters or search change
+watch([activeFilter, localSearch, sortBy, sortOrder, items], () => {
+  visibleCount.value = BATCH_SIZE;
+});
+
+function loadMore() {
+  if (hasMore.value) {
+    visibleCount.value += BATCH_SIZE;
+  }
+}
+
+function setupIntersectionObserver() {
+  if (typeof window === 'undefined' || !('IntersectionObserver' in window)) return;
+  if (observer) observer.disconnect();
+
+  observer = new IntersectionObserver(
+    (entries) => {
+      if (entries[0]?.isIntersecting && hasMore.value) {
+        loadMore();
+      }
+    },
+    { rootMargin: '250px' }
+  );
+
+  if (scrollSentinel.value) {
+    observer.observe(scrollSentinel.value);
+  }
+}
 
 async function loadItems() {
   loading.value = true;
@@ -332,7 +387,6 @@ function handleUpdated() {
   loadItems();
 }
 
-// Public method: called from parent when a game is added
 function refresh() {
   loadItems();
 }
@@ -341,6 +395,11 @@ defineExpose({ refresh });
 
 onMounted(() => {
   loadItems();
+  setupIntersectionObserver();
+});
+
+onUnmounted(() => {
+  if (observer) observer.disconnect();
 });
 </script>
 
@@ -581,6 +640,47 @@ onMounted(() => {
   color: var(--color-accent-rose);
 }
 
+/* Scroll Sentinel & Loading More */
+.scroll-sentinel {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2.5rem 1rem;
+  width: 100%;
+}
+
+.loading-more {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 1.25rem;
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: 9999px;
+  font-size: 0.825rem;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.loading-more:hover {
+  border-color: var(--color-accent-primary);
+  color: var(--color-text-primary);
+}
+
+.end-of-list {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+  display: inline-block;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
 
 .empty-state {
   text-align: center;
