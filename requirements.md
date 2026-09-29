@@ -116,32 +116,30 @@ Columnas soportadas al importar un CSV:
 | `Horas` | No | 0 | Número entero o decimal |
 | `Notas` | No | null | Texto libre |
 
-#### Formato B: JSON nativo (backup completo de LibraryTracker)
-Al exportar en JSON, se guardan todos los campos incluyendo `igdb_id`, `cover_url`, `genres`, `developers`, etc. Al re-importar JSON, no es necesario hacer matching con IGDB, ya que los datos están completos.
+#### Formato B: JSON Nativo (Backup Completo Maestro)
+Al exportar en JSON (`librarytracker-backup-YYYY-MM-DD.json`), se incluye la huella digital completa del usuario:
+- Lista completa de juegos con metadatos completos (`igdb_id`, portadas, géneros, desarrolladores, plataforma, estado, fechas, valoración, horas, notas, costo, formato físico/digital).
+- Listas personalizadas (Favoritos, Lista de Deseos/Wishlist) y preferencias de usuario.
+- Checksum de integridad (SHA-256) para validar que el archivo no esté corrupto antes de restaurar.
 
-### 6.2 Flujo de Importación CSV (3 Pasos)
+### 6.2 Flujo de Importación y Restauración Masiva
+**Paso 1 — Selección de Archivo o Copia de Seguridad**
+- El usuario puede subir un archivo local (`.json` o `.csv`) o seleccionar una copia guardada en su **Google Drive**.
+- Se analiza el archivo, se valida la estructura y la integridad (SHA-256 en JSON).
 
-**Paso 1 — Subida de Archivo**
-- El usuario arrastra o selecciona un archivo `.csv` o `.json`.
-- El sistema parsea el archivo y muestra cuántas filas/entradas se detectaron.
-- Se muestran las columnas detectadas para confirmación.
+**Paso 2 — Matching (para CSV) o Previsualización Diferencial Diff (para JSON)**
+- **Para CSV**: Matching asistido en 3 estados con IGDB (🟢 Coincidencia exacta, 🟡 Múltiples opciones, 🔴 No encontrado).
+- **Para JSON / Backup**: Previsualización diferencial (*Diff View*): indica cuántos juegos se añadirán nuevos, cuántos se actualizarán y cuántos no sufren cambios.
 
-**Paso 2 — Matching con IGDB (Revisión y Corrección)**
-- Para cada fila del CSV, se lanza automáticamente una búsqueda en la API de IGDB.
-- Cada resultado tiene uno de estos estados visuales:
-  - 🟢 **Coincidencia Exacta**: Alta confianza — se asigna automáticamente (muestra portada y año para confirmar).
-  - 🟡 **Múltiples Opciones**: Se muestra un desplegable para que el usuario elija el correcto (ej: *God of War 2005* vs *God of War 2018*).
-  - 🔴 **No Encontrado**: El usuario puede corregir el título manualmente o omitir la fila.
-- El usuario puede revisar y ajustar todos los matchings antes de importar.
+**Paso 3 — Confirmación y Modos de Restauración**
+- **Fusión Inteligente (Merge/Upsert)** *(Por defecto)*: Combina los datos manteniendo los juegos existentes y añadiendo o actualizando con los del backup sin borrar registros no presentes.
+- **Reemplazo Completo (Overwrite)**: Limpia la biblioteca actual del usuario y restaura la copia exacta (requiere confirmación explícita con modal de advertencia).
 
-**Paso 3 — Confirmación e Importación**
-- Se muestra un resumen: X juegos listos para importar, Y omitidos.
-- Al pulsar **"Confirmar e Importar"**, se insertan en bloque en Supabase.
-- Si un juego ya existe en la misma plataforma (conflicto de unicidad), se ofrece la opción de **Omitir** o **Actualizar** el registro existente.
-
-### 6.3 Exportación
-- **Exportar JSON**: Descarga un archivo `librarytracker-backup-YYYY-MM-DD.json` con todos los datos completos del usuario.
-- **Exportar CSV**: Descarga un archivo `librarytracker-YYYY-MM-DD.csv` con las columnas legibles por Excel/Sheets.
+### 6.3 Copias de Seguridad Automáticas en Google Drive (Sincronización Cloud)
+- **Ámbito Restringido (`appDataFolder`)**: Las copias se almacenan en el espacio privado oculto de la aplicación en el Google Drive del usuario (`drive.appdata`). No requiere permisos globales sobre los archivos del usuario (estilo WhatsApp).
+- **Rotación de Versiones (Versioning)**: Se conservan las últimas **5 copias de seguridad** automáticas/manuales para permitir restauraciones a puntos anteriores en caso de error.
+- **Sincronización Automática o Manual**: Opción para activar copia automática periódica o realizar una copia instantánea con un clic.
+- **Indicadores y Notificaciones**: Badge visual en interfaz mostrando la fecha y hora de la última copia en Google Drive y estado de sincronización.
 
 ---
 

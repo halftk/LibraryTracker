@@ -155,6 +155,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue';
 import { supabase, addLibraryItemToDB, updateLibraryItemInDB } from '../lib/supabase';
+import { triggerAutoDriveBackupIfEnabled } from '../lib/googleDrive';
 import type { User } from '@supabase/supabase-js';
 
 interface IGDBGame {
@@ -291,6 +292,7 @@ async function handleSubmit() {
     if (isEditMode.value && props.existingItem) {
       // ── Modo edición: actualizar en Supabase ──────────────────────────────
       const updated = await updateLibraryItemInDB(props.existingItem.id, itemData);
+      triggerAutoDriveBackupIfEnabled().catch(() => {});
       emit('updated', updated);
     } else if (currentUser.value) {
       // ── Modo añadir con sesión: guardar en Supabase ───────────────────────
@@ -304,6 +306,7 @@ async function handleSubmit() {
         steam_appid: props.game.steam_appid,
       };
       const saved = await addLibraryItemToDB(currentUser.value.id, gameSnapshot, itemData);
+      triggerAutoDriveBackupIfEnabled().catch(() => {});
       emit('added', saved);
     } else {
       // ── Sin sesión: localStorage fallback ────────────────────────────────
