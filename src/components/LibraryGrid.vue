@@ -142,7 +142,9 @@
           <p class="card-meta">
             <span>{{ item.platform }}</span>
             <span v-if="item.game.release_year"> · {{ item.game.release_year }}</span>
-            <span v-if="item.finish_date" class="finish-date-tag" title="Fecha de compleción"> · 🏁 {{ formatDateShort(item.finish_date) }}</span>
+          </p>
+          <p v-if="item.finish_date" class="finish-date-row" title="Fecha de compleción">
+            🏁 <span class="finish-date-tag">{{ formatDateShort(item.finish_date) }}</span>
           </p>
 
           <!-- Stars -->
@@ -884,7 +886,15 @@ onUnmounted(() => {
 .card-meta {
   font-size: 0.75rem;
   color: var(--color-text-muted);
+  margin-bottom: 0.2rem;
+}
+
+.finish-date-row {
+  font-size: 0.75rem;
   margin-bottom: 0.375rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
 }
 
 .finish-date-tag {

@@ -78,20 +78,11 @@
         </div>
       </Transition>
     </div>
-
-    <!-- AddGameModal -->
-    <AddGameModal
-      v-if="selectedGame"
-      :game="selectedGame"
-      @close="selectedGame = null"
-      @added="onGameAdded"
-    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue';
-import AddGameModal from './AddGameModal.vue';
 
 interface IGDBGame {
   igdb_id: number;
@@ -106,6 +97,7 @@ interface IGDBGame {
 }
 
 const emit = defineEmits<{
+  (e: 'select-game', game: IGDBGame): void;
   (e: 'game-added', item: unknown): void;
 }>();
 
@@ -113,7 +105,6 @@ const query = ref('');
 const results = ref<IGDBGame[]>([]);
 const loading = ref(false);
 const showResults = ref(false);
-const selectedGame = ref<IGDBGame | null>(null);
 const searchInput = ref<HTMLInputElement | null>(null);
 
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
@@ -163,7 +154,7 @@ onUnmounted(() => {
 });
 
 function selectGame(game: IGDBGame) {
-  selectedGame.value = game;
+  emit('select-game', game);
   showResults.value = false;
 }
 

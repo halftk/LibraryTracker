@@ -192,12 +192,20 @@
             </div>
             <p class="search-modal-subtitle">Busca cualquier videojuego en IGDB para añadirlo a tu colección.</p>
             <div class="search-modal-body">
-              <GameSearch @game-added="handleGameAddedFromHeader" />
+              <GameSearch @select-game="handleSelectGameFromHeader" @game-added="handleGameAddedFromHeader" />
             </div>
           </div>
         </div>
       </Transition>
     </Teleport>
+
+    <!-- Formulario Detalle Juego -->
+    <AddGameModal
+      v-if="selectedGameForAdd"
+      :game="selectedGameForAdd"
+      @close="selectedGameForAdd = null"
+      @added="handleGameAddedFromHeader"
+    />
 
     <!-- Import/Export Modal -->
     <ImportExportModal
@@ -214,11 +222,13 @@ import { supabase } from '../lib/supabase';
 import type { User } from '@supabase/supabase-js';
 import ImportExportModal from './ImportExportModal.vue';
 import GameSearch from './GameSearch.vue';
+import AddGameModal from './AddGameModal.vue';
 
 const user = ref<User | null>(null);
 const showModal = ref(false);
 const showImportExport = ref(false);
 const showAddGameSearchModal = ref(false);
+const selectedGameForAdd = ref<any>(null);
 const isLogin = ref(true);
 const loading = ref(false);
 const errorMsg = ref('');
@@ -227,7 +237,13 @@ const menuOpen = ref(false);
 const menuRef = ref<HTMLElement | null>(null);
 const currentLang = ref<'es' | 'en'>('es');
 
+function handleSelectGameFromHeader(game: any) {
+  showAddGameSearchModal.value = false;
+  selectedGameForAdd.value = game;
+}
+
 function handleGameAddedFromHeader() {
+  selectedGameForAdd.value = null;
   showAddGameSearchModal.value = false;
   window.dispatchEvent(new CustomEvent('library-updated'));
 }
