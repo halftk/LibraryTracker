@@ -49,12 +49,22 @@
 
       <!-- ── Búsqueda + Filtros + Ordenación (desktop) ─── -->
       <div class="filter-controls">
-        <input
-          v-model="localSearch"
-          type="text"
-          class="input-field filter-search"
-          placeholder="Filtrar por título..."
-        />
+        <div class="filter-search-wrapper">
+          <input
+            v-model="localSearch"
+            type="text"
+            class="input-field filter-search"
+            placeholder="Filtrar por título..."
+          />
+          <button
+            v-if="localSearch"
+            class="clear-search-btn"
+            @click="localSearch = ''"
+            title="Limpiar búsqueda"
+          >
+            ✕
+          </button>
+        </div>
 
         <!-- Selector de Año -->
         <select v-model="selectedYear" class="input-field filter-select">
@@ -81,12 +91,22 @@
       </div>
 
       <!-- ── Búsqueda en móvil ─── -->
-      <input
-        v-model="localSearch"
-        type="text"
-        class="input-field filter-search-mobile"
-        placeholder="🔍 Filtrar por título..."
-      />
+      <div class="filter-search-wrapper-mobile">
+        <input
+          v-model="localSearch"
+          type="text"
+          class="input-field filter-search-mobile"
+          placeholder="🔍 Filtrar por título..."
+        />
+        <button
+          v-if="localSearch"
+          class="clear-search-btn"
+          @click="localSearch = ''"
+          title="Limpiar búsqueda"
+        >
+          ✕
+        </button>
+      </div>
     </div>
 
     <!-- Grid -->
@@ -638,9 +658,52 @@ onUnmounted(() => {
   flex-wrap: wrap;
 }
 
-.filter-search {
+.filter-search-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
   max-width: 260px;
   flex: 1;
+}
+
+.filter-search-wrapper-mobile {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.filter-search {
+  width: 100%;
+  padding-right: 2.2rem !important;
+}
+
+.filter-search-mobile {
+  width: 100%;
+  padding-right: 2.2rem !important;
+}
+
+.clear-search-btn {
+  position: absolute;
+  right: 0.6rem;
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 0.2rem 0.4rem;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  z-index: 2;
+}
+
+.clear-search-btn:hover {
+  color: var(--color-text-primary);
+  background: rgba(255, 255, 255, 0.12);
 }
 
 .filter-select {
@@ -787,9 +850,11 @@ onUnmounted(() => {
   top: 0.5rem;
   right: 0.5rem;
   display: flex;
+  flex-direction: column;
   gap: 0.375rem;
   opacity: 0;
   transition: opacity 0.2s ease;
+  z-index: 10;
 }
 
 .action-btn {
