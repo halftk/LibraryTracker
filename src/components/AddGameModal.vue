@@ -197,6 +197,51 @@
               ></textarea>
             </div>
 
+            <!-- Otras partidas registradas del mismo juego -->
+            <div v-if="otherRuns.length > (isEditMode ? 1 : 0)" class="form-group other-runs-container">
+              <label class="form-label">
+                🔁 Otras partidas registradas ({{ otherRuns.length }})
+              </label>
+              <div class="other-runs-list">
+                <div
+                  v-for="run in otherRuns"
+                  :key="run.id"
+                  :class="['other-run-card', { 'current-run': run.isCurrent }]"
+                >
+                  <div class="run-card-header">
+                    <div class="run-card-badges">
+                      <span class="run-badge-tag">{{ run.runLabel }}</span>
+                      <span class="platform-badge-tag">{{ run.platform }}</span>
+                      <span :class="['status-badge-tag', `status-${statusCss(run.status)}`]">
+                        {{ statusIcon(run.status) }} {{ run.status }}
+                      </span>
+                    </div>
+                    <span v-if="run.isCurrent" class="current-badge-tag">📍 Editando ahora</span>
+                  </div>
+
+                  <div class="run-card-body">
+                    <div class="run-meta-row">
+                      <span v-if="run.finish_date" class="run-meta-item" title="Fecha de compleción">
+                        🏁 {{ formatDateShort(run.finish_date) }}
+                      </span>
+                      <span v-else-if="run.start_date" class="run-meta-item">
+                        ▶️ {{ formatDateShort(run.start_date) }}
+                      </span>
+                      <span v-if="run.rating" class="run-meta-item rating-text">
+                        ⭐ {{ run.rating }}/5
+                      </span>
+                      <span v-if="run.playtime_hours" class="run-meta-item">
+                        ⏱️ {{ run.playtime_hours }}h
+                      </span>
+                    </div>
+                    <p v-if="run.notes" class="run-notes-preview">
+                      💬 "{{ run.notes }}"
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <!-- Validation error -->
             <div v-if="validationError" class="validation-error">
               ⚠️ {{ validationError }}
@@ -325,34 +370,133 @@ const form = ref({
   notes: '',
 });
 
+interface OtherRunItem {
+  id: string;
+  platform: string;
+  status: string;
+  start_date: string | null;
+  finish_date: string | null;
+  playtime_hours: number;
+  rating: number | null;
+  notes: string | null;
+  created_at?: string;
+  runLabel?: string;
+  isCurrent?: boolean;
+}
+
 const saving = ref(false);
 const validationError = ref('');
 const currentUser = ref<User | null>(null);
 const existingRunsCount = ref(0);
+const otherRuns = ref<OtherRunItem[]>([]);
 
-async function checkExistingRuns() {
-  if (isEditMode.value) return;
+function getItemTimestamp(run: { finish_date?: string | null; start_date?: string | null; created_at?: string }): number {
+  if (run.finish_date) {
+    const t = new Date(run.finish_date).getTime();
+    if (!isNaN(t)) return t;
+  }
+  if (run.start_date) {
+    const t = new Date(run.start_date).getTime();
+    if (!isNaN(t)) return t;
+  }
+  if (run.created_at) {
+    const t = new Date(run.created_at).getTime();
+    if (!isNaN(t)) return t;
+  }
+  return 0;
+}
+
+function statusCss(status: string): string {
+  const map: Record<string, string> = {
+    'Pendiente': 'pendiente',
+    'En curso': 'en-curso',
+    'Jugado': 'jugado',
+    'Abandonado': 'abandonado',
+    'Prestado': 'prestado',
+  };
+  return map[status] || 'pendiente';
+}
+
+function statusIcon(status: string): string {
+  const map: Record<string, string> = {
+    'Pendiente': '⏳',
+    'En curso': '🎮',
+    'Jugado': '✅',
+    'Abandonado': '❌',
+    'Prestado': '🤝',
+  };
+  return map[status] || '';
+}
+
+function formatDateShort(str?: string | null): string {
+  if (!str) return '';
+  try {
+    const parts = str.split('-');
+    if (parts.length === 3) {
+      return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+    return str;
+  } catch {
+    return str;
+  }
+}
+
+async function fetchOtherRuns() {
+  if (!currentGame.value?.igdb_id) {
+    otherRuns.value = [];
+    existingRunsCount.value = 0;
+    return;
+  }
+
   try {
     const { data: { user } } = await supabase.auth.getUser();
+    let rawItems: any[] = [];
+
     if (user) {
       const { data } = await supabase
         .from('library_items')
-        .select('id')
+        .select('*')
         .eq('user_id', user.id)
         .eq('game_id', currentGame.value.igdb_id);
-      existingRunsCount.value = data?.length || 0;
+      rawItems = data || [];
     } else {
       const local = JSON.parse(localStorage.getItem('libraryItems') || '[]');
-      const matches = local.filter((i: any) => i.game?.igdb_id === currentGame.value.igdb_id || i.game_id === currentGame.value.igdb_id);
-      existingRunsCount.value = matches.length;
+      rawItems = local.filter((i: any) => i.game?.igdb_id === currentGame.value.igdb_id || i.game_id === currentGame.value.igdb_id);
     }
-  } catch {
+
+    rawItems.sort((a, b) => {
+      const timeA = getItemTimestamp(a);
+      const timeB = getItemTimestamp(b);
+      if (timeA !== timeB) return timeA - timeB;
+      const createdA = a.created_at ? new Date(a.created_at).getTime() : 0;
+      const createdB = b.created_at ? new Date(b.created_at).getTime() : 0;
+      return createdA - createdB;
+    });
+
+    otherRuns.value = rawItems.map((r, index) => ({
+      id: r.id,
+      platform: r.platform,
+      status: r.status,
+      start_date: r.start_date,
+      finish_date: r.finish_date,
+      playtime_hours: r.playtime_hours || 0,
+      rating: r.rating,
+      notes: r.notes,
+      created_at: r.created_at,
+      runLabel: `${index + 1}ª Partida`,
+      isCurrent: props.existingItem?.id === r.id,
+    }));
+
+    existingRunsCount.value = rawItems.length;
+  } catch (err) {
+    console.error('Error fetching other runs:', err);
+    otherRuns.value = [];
     existingRunsCount.value = 0;
   }
 }
 
 watch(currentGame, () => {
-  checkExistingRuns();
+  fetchOtherRuns();
 }, { immediate: true });
 
 onMounted(async () => {
@@ -924,5 +1068,120 @@ input[type="date"].input-field {
 .notice-icon {
   font-size: 1.1rem;
   flex-shrink: 0;
+}
+
+/* ── Historial de partidas en AddGameModal ─────────── */
+.other-runs-container {
+  margin-top: 0.5rem;
+}
+
+.other-runs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  max-height: 220px;
+  overflow-y: auto;
+  padding-right: 0.25rem;
+}
+
+.other-run-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--color-border, #30363d);
+  border-radius: 10px;
+  padding: 0.75rem 0.875rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  transition: all 0.2s ease;
+}
+
+.other-run-card.current-run {
+  border-color: var(--color-accent-primary, #7c3aed);
+  background: rgba(124, 58, 237, 0.08);
+  box-shadow: 0 0 10px rgba(124, 58, 237, 0.15);
+}
+
+.run-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.run-card-badges {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  flex-wrap: wrap;
+}
+
+.run-badge-tag {
+  background: rgba(124, 58, 237, 0.25);
+  border: 1px solid rgba(124, 58, 237, 0.4);
+  color: #c4b5fd;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+}
+
+.platform-badge-tag {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--color-border, #30363d);
+  color: var(--color-text-secondary, #8b949e);
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+}
+
+.status-badge-tag {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+}
+
+.status-badge-tag.status-pendiente { background: rgba(245, 158, 11, 0.15); color: #fcd34d; }
+.status-badge-tag.status-en-curso { background: rgba(6, 182, 212, 0.15); color: #67e8f9; }
+.status-badge-tag.status-jugado { background: rgba(16, 185, 129, 0.15); color: #6ee7b7; }
+.status-badge-tag.status-abandonado { background: rgba(244, 63, 94, 0.15); color: #fda4af; }
+.status-badge-tag.status-prestado { background: rgba(124, 58, 237, 0.15); color: #c4b5fd; }
+
+.current-badge-tag {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--color-accent-cyan, #38bdf8);
+}
+
+.run-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.run-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.75rem;
+  color: var(--color-text-secondary, #8b949e);
+  flex-wrap: wrap;
+}
+
+.rating-text {
+  color: var(--color-accent-amber, #fbbf24);
+  font-weight: 600;
+}
+
+.run-notes-preview {
+  font-size: 0.75rem;
+  color: var(--color-text-muted, #8b949e);
+  font-style: italic;
+  margin: 0;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 </style>
