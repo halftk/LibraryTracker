@@ -19,7 +19,9 @@ export const PLATFORM_GROUPS: PlatformGroup[] = [
     platforms: [
       { key: 'PlayStation', label: 'PlayStation' },
       { key: 'PS2', label: 'PlayStation 2' },
+      { key: 'PSP', label: 'PlayStation Portable (PSP)' },
       { key: 'PS3', label: 'PlayStation 3' },
+      { key: 'PS Vita', label: 'PlayStation Vita' },
       { key: 'PS4', label: 'PlayStation 4' },
       { key: 'PS5', label: 'PlayStation 5' },
     ],
@@ -47,6 +49,7 @@ export const PLATFORM_GROUPS: PlatformGroup[] = [
   {
     group: 'Xbox',
     platforms: [
+      { key: 'Xbox', label: 'Xbox' },
       { key: 'Xbox 360', label: 'Xbox 360' },
       { key: 'Xbox One', label: 'Xbox One' },
       { key: 'Xbox Series X/S', label: 'Xbox Series X/S' },
@@ -73,7 +76,10 @@ const PLATFORM_LABEL_MAP: Record<string, string> = {
   'PlayStation': 'PlayStation',
   'PS1': 'PlayStation',
   'PS2': 'PlayStation 2',
+  'PSP': 'PlayStation Portable (PSP)',
   'PS3': 'PlayStation 3',
+  'PS Vita': 'PlayStation Vita',
+  'PSVita': 'PlayStation Vita',
   'PS4': 'PlayStation 4',
   'PS5': 'PlayStation 5',
   'NES': 'NES',
@@ -86,6 +92,7 @@ const PLATFORM_LABEL_MAP: Record<string, string> = {
   'GameBoy Color': 'Game Boy Color',
   'GameBoy Advance': 'Game Boy Advance',
   'NDS': 'Nintendo DS',
+  'Xbox': 'Xbox',
   'Xbox 360': 'Xbox 360',
   'Xbox One': 'Xbox One',
   'Xbox Series X/S': 'Xbox Series X/S',
