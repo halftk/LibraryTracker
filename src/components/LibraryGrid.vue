@@ -140,7 +140,7 @@
         <div class="card-info">
           <h3 class="card-title">{{ item.game.title }}</h3>
           <p class="card-meta">
-            <span>{{ item.platform }}</span>
+            <span>{{ formatPlatformLabel(item.platform) }}</span>
             <span v-if="item.game.release_year"> · {{ item.game.release_year }}</span>
           </p>
           <p v-if="item.finish_date" class="finish-date-row" title="Fecha de compleción">
@@ -223,6 +223,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import { supabase, getLibraryItems, deleteLibraryItemFromDB } from '../lib/supabase';
+import { formatPlatformLabel } from '../lib/platforms';
 import type { User } from '@supabase/supabase-js';
 import AddGameModal from './AddGameModal.vue';
 

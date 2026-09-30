@@ -98,7 +98,11 @@
               <label class="form-label">Plataforma <span class="required">*</span></label>
               <select v-model="form.platform" class="input-field" required>
                 <option value="" disabled>Seleccionar plataforma...</option>
-                <option v-for="p in availablePlatforms" :key="p" :value="p">{{ p }}</option>
+                <optgroup v-for="g in platformGroupsComputed" :key="g.group" :label="g.group">
+                  <option v-for="p in g.platforms" :key="p.key" :value="p.key">
+                    {{ p.label }}
+                  </option>
+                </optgroup>
               </select>
             </div>
 
@@ -270,6 +274,7 @@
 import { ref, computed, watch, onMounted } from 'vue';
 import { supabase, addLibraryItemToDB, updateLibraryItemInDB } from '../lib/supabase';
 import { triggerAutoDriveBackupIfEnabled } from '../lib/googleDrive';
+import { PLATFORM_GROUPS, DEFAULT_PLATFORM_KEYS, formatPlatformLabel } from '../lib/platforms';
 import type { User } from '@supabase/supabase-js';
 
 interface IGDBGame {
@@ -356,12 +361,29 @@ const statuses = [
   { value: 'Prestado' as GameStatus, label: 'Prestado', icon: '🤝', css: 'prestado' },
 ];
 
-const defaultPlatforms = ['PC', 'PS5', 'PS4', 'Xbox Series X/S', 'Xbox One', 'Nintendo Switch', 'Switch 2', 'Steam Deck', 'Mobile', 'Otro'];
-
-const availablePlatforms = computed(() => {
+const platformGroupsComputed = computed(() => {
   const igdbPlatforms = currentGame.value.platforms || [];
-  const all = [...new Set([...igdbPlatforms, ...defaultPlatforms])];
-  return all;
+  const extraPlatforms = igdbPlatforms.filter(p => !DEFAULT_PLATFORM_KEYS.has(p));
+
+  const groups = PLATFORM_GROUPS.map(g => ({
+    group: g.group,
+    platforms: g.platforms.map(p => ({
+      key: p.key,
+      label: p.label,
+    })),
+  }));
+
+  if (extraPlatforms.length > 0) {
+    groups.push({
+      group: 'Otras (IGDB)',
+      platforms: extraPlatforms.map(p => ({
+        key: p,
+        label: formatPlatformLabel(p),
+      })),
+    });
+  }
+
+  return groups;
 });
 
 const hoverRating = ref(0);

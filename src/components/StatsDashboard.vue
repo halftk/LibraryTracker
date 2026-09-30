@@ -68,7 +68,7 @@
             :key="platform"
             class="bar-item"
           >
-            <span class="bar-label">{{ platform }}</span>
+            <span class="bar-label">{{ formatPlatformLabel(platform) }}</span>
             <div class="bar-track">
               <div
                 class="bar-fill bar-fill-platform"
@@ -107,6 +107,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { supabase, getLibraryItems } from '../lib/supabase';
+import { formatPlatformLabel } from '../lib/platforms';
 
 interface LibraryItem {
   id: string;
