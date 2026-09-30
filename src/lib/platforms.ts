@@ -44,6 +44,7 @@ export const PLATFORM_GROUPS: PlatformGroup[] = [
       { key: 'GameBoy Color', label: 'Game Boy Color' },
       { key: 'GameBoy Advance', label: 'Game Boy Advance' },
       { key: 'NDS', label: 'Nintendo DS' },
+      { key: 'Nintendo 3DS', label: 'Nintendo 3DS' },
     ],
   },
   {
@@ -92,6 +93,8 @@ const PLATFORM_LABEL_MAP: Record<string, string> = {
   'GameBoy Color': 'Game Boy Color',
   'GameBoy Advance': 'Game Boy Advance',
   'NDS': 'Nintendo DS',
+  '3DS': 'Nintendo 3DS',
+  'Nintendo 3DS': 'Nintendo 3DS',
   'Xbox': 'Xbox',
   'Xbox 360': 'Xbox 360',
   'Xbox One': 'Xbox One',
