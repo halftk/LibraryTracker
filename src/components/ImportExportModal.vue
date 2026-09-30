@@ -566,6 +566,8 @@ import {
 } from '../lib/backupService';
 import {
   requestGoogleDriveAccess,
+  ensureValidDriveToken,
+  isDriveConnectedInStorage,
   listDriveBackups,
   uploadDriveBackup,
   downloadDriveBackup,
@@ -668,11 +670,13 @@ const skippedDuplicates = ref(0);
 const processedCount = ref(0);
 const importError = ref('');
 
-onMounted(() => {
-  const token = getSavedDriveToken();
-  if (token) {
+onMounted(async () => {
+  if (isDriveConnectedInStorage()) {
     driveConnected.value = true;
-    loadDriveBackups();
+    const token = await ensureValidDriveToken(true);
+    if (token) {
+      loadDriveBackups();
+    }
   }
 });
 
@@ -724,7 +728,7 @@ async function loadDriveBackups() {
   driveError.value = '';
   loadingDriveList.value = true;
   try {
-    let token = getSavedDriveToken();
+    let token = await ensureValidDriveToken(true);
     if (!token) {
       token = await requestGoogleDriveAccess();
     }
@@ -743,7 +747,7 @@ async function handleUploadToDrive() {
   gdriveSyncing.value = true;
   driveError.value = '';
   try {
-    let token = getSavedDriveToken();
+    let token = await ensureValidDriveToken(true);
     if (!token) {
       token = await requestGoogleDriveAccess();
     }
@@ -771,7 +775,7 @@ async function restoreDriveBackup(file: DriveBackupFile) {
   selectedDriveFile.value = file;
   parseError.value = '';
   try {
-    let token = getSavedDriveToken();
+    let token = await ensureValidDriveToken(true);
     if (!token) {
       token = await requestGoogleDriveAccess();
     }
@@ -784,7 +788,7 @@ async function restoreDriveBackup(file: DriveBackupFile) {
 
 async function downloadDriveBackupFile(file: DriveBackupFile) {
   try {
-    let token = getSavedDriveToken();
+    let token = await ensureValidDriveToken(true);
     if (!token) {
       token = await requestGoogleDriveAccess();
     }

@@ -16,10 +16,23 @@ const GDRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.appdata';
 const STORAGE_KEY_TOKEN = 'librarytracker_gdrive_token';
 const STORAGE_KEY_LAST_BACKUP = 'librarytracker_gdrive_last_backup';
 const STORAGE_KEY_AUTO_BACKUP = 'librarytracker_gdrive_auto_backup';
+const STORAGE_KEY_CONNECTED = 'librarytracker_gdrive_is_connected';
 
 export interface DriveTokenState {
   accessToken: string;
   expiresAt: number;
+}
+
+export function isDriveConnectedInStorage(): boolean {
+  return localStorage.getItem(STORAGE_KEY_CONNECTED) === 'true';
+}
+
+export function setDriveConnectedInStorage(connected: boolean) {
+  if (connected) {
+    localStorage.setItem(STORAGE_KEY_CONNECTED, 'true');
+  } else {
+    localStorage.removeItem(STORAGE_KEY_CONNECTED);
+  }
 }
 
 /**
@@ -41,7 +54,7 @@ export function getSavedDriveToken(): string | null {
 }
 
 /**
- * Guarda el token de acceso con su tiempo de expiración
+ * Guarda el token de acceso con su tiempo de expiración y marca Drive como conectado
  */
 export function saveDriveToken(accessToken: string, expiresInSeconds: number = 3600) {
   const data: DriveTokenState = {
@@ -49,13 +62,15 @@ export function saveDriveToken(accessToken: string, expiresInSeconds: number = 3
     expiresAt: Date.now() + expiresInSeconds * 1000,
   };
   localStorage.setItem(STORAGE_KEY_TOKEN, JSON.stringify(data));
+  setDriveConnectedInStorage(true);
 }
 
 /**
- * Elimina el token de acceso guardado
+ * Elimina el token de acceso guardado y el estado de conexión
  */
 export function clearDriveToken() {
   localStorage.removeItem(STORAGE_KEY_TOKEN);
+  localStorage.removeItem(STORAGE_KEY_CONNECTED);
 }
 
 /**
@@ -102,9 +117,9 @@ export function setCustomClientId(clientId: string) {
 
 /**
  * Solicita autorización del usuario con Google Identity Services (GIS)
- * Abre el popup oficial de Google OAuth para solicitar acceso a appDataFolder
+ * Abre el popup oficial de Google OAuth o intenta renovación silenciosa si silent = true
  */
-export async function requestGoogleDriveAccess(clientId?: string): Promise<string> {
+export async function requestGoogleDriveAccess(clientId?: string, silent: boolean = false): Promise<string> {
   let gClientId =
     clientId ||
     getCustomClientId() ||
@@ -130,7 +145,6 @@ export async function requestGoogleDriveAccess(clientId?: string): Promise<strin
   }
 
   return new Promise((resolve, reject) => {
-
     // Verificar que la librería GIS esté disponible o cargarla dinámicamente
     if (typeof (window as any).google === 'undefined' || !(window as any).google.accounts?.oauth2) {
       const script = document.createElement('script');
@@ -138,14 +152,14 @@ export async function requestGoogleDriveAccess(clientId?: string): Promise<strin
       script.async = true;
       script.defer = true;
       script.onload = () => {
-        initOAuthFlow(gClientId, resolve, reject);
+        initOAuthFlow(gClientId, resolve, reject, silent);
       };
       script.onerror = () => {
         reject(new Error('No se pudo cargar la librería Google Identity Services.'));
       };
       document.head.appendChild(script);
     } else {
-      initOAuthFlow(gClientId, resolve, reject);
+      initOAuthFlow(gClientId, resolve, reject, silent);
     }
   });
 }
@@ -153,7 +167,8 @@ export async function requestGoogleDriveAccess(clientId?: string): Promise<strin
 function initOAuthFlow(
   clientId: string,
   resolve: (token: string) => void,
-  reject: (err: Error) => void
+  reject: (err: Error) => void,
+  silent: boolean = false
 ) {
   try {
     const tokenClient = (window as any).google.accounts.oauth2.initTokenClient({
@@ -173,10 +188,40 @@ function initOAuthFlow(
         }
       },
     });
-    tokenClient.requestAccessToken({ prompt: 'consent' });
+
+    if (silent) {
+      tokenClient.requestAccessToken({ prompt: '' });
+    } else {
+      tokenClient.requestAccessToken({ prompt: 'consent' });
+    }
   } catch (err: any) {
     reject(err);
   }
+}
+
+/**
+ * Garantiza la obtención de un token válido de Google Drive.
+ * 1. Si existe un token válido en localStorage, lo devuelve inmediatamente.
+ * 2. Si el token caducó pero el usuario ya estaba conectado, intenta refrescarlo de forma silenciosa.
+ * 3. Si no es posible renovar en segundo plano, devuelve null.
+ */
+export async function ensureValidDriveToken(silentIfPossible: boolean = true): Promise<string | null> {
+  const existingToken = getSavedDriveToken();
+  if (existingToken) {
+    return existingToken;
+  }
+
+  if (isDriveConnectedInStorage() && silentIfPossible) {
+    try {
+      const newToken = await requestGoogleDriveAccess(undefined, true);
+      return newToken;
+    } catch (err) {
+      console.warn('⚡ No se pudo renovar silenciosamente el token de Google Drive:', err);
+      return null;
+    }
+  }
+
+  return null;
 }
 
 /**
