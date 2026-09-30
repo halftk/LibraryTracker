@@ -418,7 +418,7 @@ const hasMore = computed(() => {
 });
 
 // Reset visible count when filters or search change
-watch([activeFilter, localSearch, selectedYear, sortBy, sortOrder, items], () => {
+watch([activeFilter, localSearch, selectedYear, sortBy, sortOrder], () => {
   visibleCount.value = BATCH_SIZE;
 });
 
@@ -519,9 +519,28 @@ function openNewRun(item: LibraryItem) {
   };
 }
 
-function handleNewRunAdded() {
-  addingNewRunGame.value = null;
-  loadItems();
+function formatRawItemToLibraryItem(rawItem: any): LibraryItem {
+  return {
+    id: rawItem.id,
+    game: {
+      igdb_id: rawItem.game?.id ?? rawItem.game?.igdb_id ?? rawItem.game_id,
+      title: rawItem.game?.title ?? 'Juego sin título',
+      cover_url: rawItem.game?.cover_url ?? null,
+      release_year: rawItem.game?.release_year ?? null,
+      genres: rawItem.game?.genres ?? [],
+      developers: rawItem.game?.developers ?? [],
+      steam_appid: rawItem.game?.steam_appid ?? null,
+    },
+    platform: rawItem.platform,
+    status: rawItem.status,
+    start_date: rawItem.start_date,
+    finish_date: rawItem.finish_date,
+    playtime_hours: rawItem.playtime_hours || 0,
+    rating: rawItem.rating,
+    lent_to: rawItem.lent_to,
+    notes: rawItem.notes,
+    created_at: rawItem.created_at || new Date().toISOString(),
+  };
 }
 
 function getItemTimestamp(item: LibraryItem): number {
@@ -544,7 +563,6 @@ function getRunBadgeInfo(item: LibraryItem): { badgeText: string; totalCount: nu
   const sameGameItems = items.value.filter(i => i.game.igdb_id === item.game.igdb_id);
   if (sameGameItems.length <= 1) return null;
 
-  // Ordenar cronológicamente por fecha de compleción (o fecha de inicio / creación si no la hay)
   const sorted = [...sameGameItems].sort((a, b) => {
     const timeA = getItemTimestamp(a);
     const timeB = getItemTimestamp(b);
@@ -585,9 +603,35 @@ function openEdit(item: LibraryItem) {
   };
 }
 
-function handleUpdated() {
+function handleNewRunAdded(rawItem?: any) {
+  addingNewRunGame.value = null;
+  if (!rawItem || !rawItem.id) {
+    loadItems();
+    return;
+  }
+
+  const newItem = formatRawItemToLibraryItem(rawItem);
+  items.value = [newItem, ...items.value];
+  window.dispatchEvent(new CustomEvent('library-updated'));
+}
+
+function handleUpdated(rawItem?: any) {
   editingItem.value = null;
-  loadItems();
+  if (!rawItem || !rawItem.id) {
+    loadItems();
+    return;
+  }
+
+  const updatedItem = formatRawItemToLibraryItem(rawItem);
+  const idx = items.value.findIndex(i => i.id === updatedItem.id);
+  if (idx !== -1) {
+    items.value[idx] = updatedItem;
+    items.value = [...items.value];
+  } else {
+    items.value = [updatedItem, ...items.value];
+  }
+
+  window.dispatchEvent(new CustomEvent('library-updated'));
 }
 
 function refresh() {
