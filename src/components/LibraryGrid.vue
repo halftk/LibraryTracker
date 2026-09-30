@@ -504,14 +504,34 @@ function handleNewRunAdded() {
   loadItems();
 }
 
+function getItemTimestamp(item: LibraryItem): number {
+  if (item.finish_date) {
+    const t = new Date(item.finish_date).getTime();
+    if (!isNaN(t)) return t;
+  }
+  if (item.start_date) {
+    const t = new Date(item.start_date).getTime();
+    if (!isNaN(t)) return t;
+  }
+  if (item.created_at) {
+    const t = new Date(item.created_at).getTime();
+    if (!isNaN(t)) return t;
+  }
+  return 0;
+}
+
 function getRunBadgeInfo(item: LibraryItem): { badgeText: string; totalCount: number } | null {
   const sameGameItems = items.value.filter(i => i.game.igdb_id === item.game.igdb_id);
   if (sameGameItems.length <= 1) return null;
 
+  // Ordenar cronológicamente por fecha de compleción (o fecha de inicio / creación si no la hay)
   const sorted = [...sameGameItems].sort((a, b) => {
-    const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
-    const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
-    return timeA - timeB;
+    const timeA = getItemTimestamp(a);
+    const timeB = getItemTimestamp(b);
+    if (timeA !== timeB) return timeA - timeB;
+    const createdA = a.created_at ? new Date(a.created_at).getTime() : 0;
+    const createdB = b.created_at ? new Date(b.created_at).getTime() : 0;
+    return createdA - createdB;
   });
 
   const index = sorted.findIndex(i => i.id === item.id);
