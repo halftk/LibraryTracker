@@ -114,7 +114,7 @@
       <div
         v-for="item in displayedItems"
         :key="item.id"
-        class="game-card card"
+        :class="['game-card card', { 'is-masterpiece': item.rating === 5 }]"
       >
         <!-- Cover -->
         <div class="card-cover-wrapper">
@@ -146,8 +146,8 @@
           </p>
 
           <!-- Stars -->
-          <div v-if="item.rating" class="card-rating">
-            <span v-for="s in 5" :key="s" :class="['star-small', { filled: s <= item.rating }]">★</span>
+          <div v-if="item.rating" class="card-rating" :title="`${item.rating}/5 — ${getRatingLabel(item.rating)}`">
+            <span v-for="s in 5" :key="s" :class="['star-small', { filled: s <= item.rating }]" :title="`${s} - ${getRatingLabel(s)}`">★</span>
           </div>
 
           <!-- Lent to badge -->
@@ -563,6 +563,17 @@ function getRunBadgeInfo(item: LibraryItem): { badgeText: string; totalCount: nu
   };
 }
 
+function getRatingLabel(rating: number): string {
+  const labels: Record<number, string> = {
+    1: 'Infumable',
+    2: 'Meh',
+    3: 'Buen juego',
+    4: 'Notable',
+    5: 'Excelente',
+  };
+  return labels[rating] || '';
+}
+
 function openEdit(item: LibraryItem) {
   editingItem.value = {
     ...item,
@@ -759,6 +770,18 @@ onUnmounted(() => {
   overflow: hidden;
   display: flex;
   flex-direction: column;
+}
+
+/* ── Reborde dorado para juegos de 5 estrellas (Excelente / Masterpiece) ── */
+.game-card.is-masterpiece {
+  border: 1px solid rgba(251, 191, 36, 0.45) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), 0 0 16px rgba(245, 158, 11, 0.18);
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.game-card.is-masterpiece:hover {
+  border-color: rgba(251, 191, 36, 0.85) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 25px rgba(245, 158, 11, 0.35);
 }
 
 .game-card:hover .card-actions {

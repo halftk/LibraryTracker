@@ -163,12 +163,17 @@
                   v-for="star in 5"
                   :key="star"
                   type="button"
-                  :class="['star', { filled: star <= form.rating }]"
+                  :class="['star', { filled: star <= (hoverRating || form.rating) }]"
+                  :title="`${star} - ${getRatingLabel(star)}`"
+                  @mouseenter="hoverRating = star"
+                  @mouseleave="hoverRating = 0"
                   @click="form.rating = star === form.rating ? 0 : star"
                 >
                   ★
                 </button>
-                <span class="rating-value">{{ form.rating > 0 ? `${form.rating}/5` : '' }}</span>
+                <span class="rating-value">
+                  {{ (hoverRating || form.rating) > 0 ? `${hoverRating || form.rating}/5 — ${getRatingLabel(hoverRating || form.rating)}` : '' }}
+                </span>
               </div>
             </div>
 
@@ -358,6 +363,19 @@ const availablePlatforms = computed(() => {
   const all = [...new Set([...igdbPlatforms, ...defaultPlatforms])];
   return all;
 });
+
+const hoverRating = ref(0);
+
+function getRatingLabel(rating: number): string {
+  const labels: Record<number, string> = {
+    1: 'Infumable',
+    2: 'Meh',
+    3: 'Buen juego',
+    4: 'Notable',
+    5: 'Excelente',
+  };
+  return labels[rating] || '';
+}
 
 const form = ref({
   platform: '',
