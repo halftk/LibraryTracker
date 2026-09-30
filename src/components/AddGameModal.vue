@@ -495,27 +495,31 @@ async function fetchOtherRuns() {
   }
 }
 
-watch(currentGame, () => {
-  fetchOtherRuns();
-}, { immediate: true });
-
-onMounted(async () => {
-  const { data } = await supabase.auth.getUser();
-  currentUser.value = data.user;
-  checkExistingRuns();
-
-  // Pre-rellenar formulario en modo edición
-  if (props.existingItem) {
-    const e = props.existingItem;
-    form.value.platform = e.platform;
-    form.value.status = e.status;
+watch(() => props.existingItem, (e) => {
+  if (e) {
+    form.value.platform = e.platform || '';
+    form.value.status = (e.status as GameStatus) || 'Pendiente';
     form.value.startDate = e.start_date || '';
     form.value.finishDate = e.finish_date || '';
-    form.value.playtimeHours = e.playtime_hours;
+    form.value.playtimeHours = e.playtime_hours || 0;
     form.value.rating = e.rating || 0;
     form.value.lentTo = e.lent_to || '';
     form.value.notes = e.notes || '';
   }
+}, { immediate: true });
+
+watch(currentGame, () => {
+  fetchOtherRuns().catch(console.error);
+}, { immediate: true });
+
+onMounted(async () => {
+  try {
+    const { data } = await supabase.auth.getUser();
+    currentUser.value = data.user;
+  } catch (err) {
+    console.error('Error getting user:', err);
+  }
+  fetchOtherRuns().catch(console.error);
 });
 
 // Clear validation on form changes
