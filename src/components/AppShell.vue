@@ -92,24 +92,6 @@
 
     <!-- ── ESTADO: Con sesión → App completa ────────────────── -->
     <template v-else>
-      <!-- Hero + Search -->
-      <section class="hero">
-        <div class="hero-content">
-          <h1 class="hero-title">
-            Tu biblioteca de
-            <span class="hero-gradient">videojuegos</span>
-          </h1>
-          <p class="hero-subtitle">
-            Busca, organiza y lleva el control de todos los juegos que has jugado, estás jugando o quieres jugar.
-          </p>
-        </div>
-        <div class="search-wrapper">
-          <GameSearch @game-added="refreshAll" />
-        </div>
-      </section>
-
-      <div class="divider"></div>
-
       <!-- Stats -->
       <section class="section">
         <StatsDashboard ref="statsRef" />
@@ -133,10 +115,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watchEffect } from 'vue';
+import { ref, onMounted, onUnmounted, watchEffect } from 'vue';
 import { supabase } from '../lib/supabase';
 import type { User } from '@supabase/supabase-js';
-import GameSearch from './GameSearch.vue';
 import LibraryGrid from './LibraryGrid.vue';
 import StatsDashboard from './StatsDashboard.vue';
 
@@ -221,6 +202,7 @@ onMounted(async () => {
   window.addEventListener('app-update-available', () => {
     updateAvailable.value = true;
   });
+  window.addEventListener('library-updated', refreshAll);
 
   const { data } = await supabase.auth.getUser();
   user.value = data.user;
@@ -230,6 +212,10 @@ onMounted(async () => {
     user.value = session?.user ?? null;
     authLoading.value = false;
   });
+});
+
+onUnmounted(() => {
+  window.removeEventListener('library-updated', refreshAll);
 });
 
 // Ocultar el header del layout cuando no hay sesión

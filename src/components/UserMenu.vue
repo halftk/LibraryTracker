@@ -1,5 +1,16 @@
 <template>
   <div class="auth-menu">
+    <!-- Botón Añadir Juego (Header) -->
+    <button
+      v-if="user"
+      class="btn-add-game-header"
+      @click="showAddGameSearchModal = true"
+      title="Buscar y añadir videojuego a la biblioteca"
+    >
+      <span class="add-icon">➕</span>
+      <span class="add-text">Añadir juego</span>
+    </button>
+
     <!-- Botón circular de idioma -->
     <button
       class="lang-btn"
@@ -170,6 +181,24 @@
 
     </Teleport>
 
+    <!-- Modal Añadir Juego (Header) -->
+    <Teleport to="body">
+      <Transition name="fade">
+        <div v-if="showAddGameSearchModal" class="search-modal-overlay" @click.self="showAddGameSearchModal = false">
+          <div class="search-modal-card">
+            <div class="search-modal-header">
+              <h3 class="search-modal-title">➕ Añadir juego a tu biblioteca</h3>
+              <button class="close-btn" @click="showAddGameSearchModal = false">✕</button>
+            </div>
+            <p class="search-modal-subtitle">Busca cualquier videojuego en IGDB para añadirlo a tu colección.</p>
+            <div class="search-modal-body">
+              <GameSearch @game-added="handleGameAddedFromHeader" />
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
+
     <!-- Import/Export Modal -->
     <ImportExportModal
       v-if="showImportExport"
@@ -184,10 +213,12 @@ import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { supabase } from '../lib/supabase';
 import type { User } from '@supabase/supabase-js';
 import ImportExportModal from './ImportExportModal.vue';
+import GameSearch from './GameSearch.vue';
 
 const user = ref<User | null>(null);
 const showModal = ref(false);
 const showImportExport = ref(false);
+const showAddGameSearchModal = ref(false);
 const isLogin = ref(true);
 const loading = ref(false);
 const errorMsg = ref('');
@@ -195,6 +226,11 @@ const registrationSuccess = ref(false);
 const menuOpen = ref(false);
 const menuRef = ref<HTMLElement | null>(null);
 const currentLang = ref<'es' | 'en'>('es');
+
+function handleGameAddedFromHeader() {
+  showAddGameSearchModal.value = false;
+  window.dispatchEvent(new CustomEvent('library-updated'));
+}
 
 function initLang() {
   if (typeof window !== 'undefined') {
@@ -798,5 +834,95 @@ onUnmounted(() => {
   0% { transform: scale(0.5); opacity: 0; }
   70% { transform: scale(1.1); }
   100% { transform: scale(1); opacity: 1; }
+}
+
+/* ── Botón Añadir Juego Header ────────────────────────── */
+.btn-add-game-header {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  background: linear-gradient(135deg, var(--color-accent-primary), #4f46e5);
+  color: white;
+  border: none;
+  padding: 0.4rem 0.85rem;
+  border-radius: 20px;
+  font-size: 0.825rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 10px rgba(109, 40, 217, 0.35);
+  font-family: var(--font-family-base);
+  white-space: nowrap;
+}
+
+.btn-add-game-header:hover {
+  transform: translateY(-1px) scale(1.03);
+  box-shadow: 0 4px 16px rgba(109, 40, 217, 0.55);
+  background: linear-gradient(135deg, #7c3aed, #6366f1);
+}
+
+.add-icon {
+  font-size: 0.85rem;
+  line-height: 1;
+}
+
+@media (max-width: 640px) {
+  .btn-add-game-header {
+    padding: 0;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    justify-content: center;
+  }
+  .add-text {
+    display: none;
+  }
+}
+
+/* ── Modal Búsqueda Header ────────────────────────────── */
+.search-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  z-index: 300;
+  padding: 4rem 1rem 1rem;
+}
+
+.search-modal-card {
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 620px;
+  padding: 1.75rem;
+  position: relative;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7), 0 0 30px rgba(109, 40, 217, 0.2);
+}
+
+.search-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.25rem;
+}
+
+.search-modal-title {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--color-text-primary);
+}
+
+.search-modal-subtitle {
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+  margin-bottom: 1.25rem;
+}
+
+.search-modal-body {
+  position: relative;
 }
 </style>
