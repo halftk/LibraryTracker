@@ -110,6 +110,10 @@
             <span>{{ statusIcon(item.status) }}</span>
             <span>{{ item.status }}</span>
           </span>
+          <!-- Replay / Run badge -->
+          <span v-if="getRunBadgeInfo(item)" class="badge run-badge" :title="`Tienes ${getRunBadgeInfo(item)?.totalCount} partida(s) registrada(s) de este juego`">
+            🔁 {{ getRunBadgeInfo(item)?.badgeText }}
+          </span>
         </div>
 
         <!-- Info -->
@@ -134,14 +138,19 @@
 
         <!-- Actions -->
         <div class="card-actions">
-          <button class="action-btn edit-btn" title="Editar" @click="openEdit(item)">
+          <button class="action-btn replay-btn" title="Registrar otra partida / rejugada" @click="openNewRun(item)">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+            </svg>
+          </button>
+          <button class="action-btn edit-btn" title="Editar partida" @click="openEdit(item)">
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
               <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
             </svg>
           </button>
-          <button class="action-btn delete-btn" title="Eliminar" @click="deleteItem(item.id)">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <button class="action-btn delete-btn" title="Eliminar partida" @click="deleteItem(item.id)">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
             </svg>
           </button>
@@ -177,6 +186,14 @@
       :existing-item="editingItem"
       @close="editingItem = null"
       @updated="handleUpdated"
+    />
+
+    <!-- Add New Run Modal -->
+    <AddGameModal
+      v-if="addingNewRunGame"
+      :game="addingNewRunGame"
+      @close="addingNewRunGame = null"
+      @added="handleNewRunAdded"
     />
   </div>
 </template>
@@ -466,6 +483,46 @@ async function deleteItem(id: string) {
   }
 }
 
+const addingNewRunGame = ref<any>(null);
+
+function openNewRun(item: LibraryItem) {
+  addingNewRunGame.value = {
+    igdb_id: item.game.igdb_id,
+    title: item.game.title,
+    cover_url: item.game.cover_url,
+    release_year: item.game.release_year,
+    genres: item.game.genres || [],
+    developers: item.game.developers || [],
+    platforms: [item.platform],
+    summary: null,
+    steam_appid: item.game.steam_appid || null,
+  };
+}
+
+function handleNewRunAdded() {
+  addingNewRunGame.value = null;
+  loadItems();
+}
+
+function getRunBadgeInfo(item: LibraryItem): { badgeText: string; totalCount: number } | null {
+  const sameGameItems = items.value.filter(i => i.game.igdb_id === item.game.igdb_id);
+  if (sameGameItems.length <= 1) return null;
+
+  const sorted = [...sameGameItems].sort((a, b) => {
+    const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
+    const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
+    return timeA - timeB;
+  });
+
+  const index = sorted.findIndex(i => i.id === item.id);
+  if (index === -1) return null;
+
+  return {
+    badgeText: `${index + 1}ª Partida`,
+    totalCount: sameGameItems.length,
+  };
+}
+
 function openEdit(item: LibraryItem) {
   editingItem.value = {
     ...item,
@@ -730,6 +787,12 @@ onUnmounted(() => {
   transition: all 0.2s ease;
 }
 
+.replay-btn:hover {
+  background: rgba(6, 182, 212, 0.3);
+  border-color: var(--color-accent-cyan);
+  color: var(--color-accent-cyan);
+}
+
 .edit-btn:hover {
   background: rgba(124, 58, 237, 0.3);
   border-color: var(--color-accent-primary);
@@ -740,6 +803,24 @@ onUnmounted(() => {
   background: rgba(244, 63, 94, 0.3);
   border-color: var(--color-accent-rose);
   color: var(--color-accent-rose);
+}
+
+.run-badge {
+  position: absolute;
+  bottom: 0.5rem;
+  right: 0.5rem;
+  background: rgba(124, 58, 237, 0.9);
+  backdrop-filter: blur(4px);
+  color: #ffffff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  z-index: 2;
 }
 
 /* Scroll Sentinel & Loading More */

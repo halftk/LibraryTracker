@@ -76,9 +76,11 @@ CREATE TABLE IF NOT EXISTS public.library_items (
     notes TEXT,
     lent_to TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
-    updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
-    CONSTRAINT unique_user_game_platform UNIQUE (user_id, game_id, platform)
+    updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
 );
+
+-- Si habías creado previamente la tabla con restricción de juego único por plataforma, ejecútalo para permitir múltiples rejugadas:
+ALTER TABLE public.library_items DROP CONSTRAINT IF EXISTS unique_user_game_platform;
 
 -- 6. Tabla Reviews (Reseñas/Impresiones por item)
 CREATE TABLE IF NOT EXISTS public.reviews (

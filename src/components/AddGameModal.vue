@@ -85,6 +85,12 @@
             </div>
           </div>
 
+          <!-- Notice for replaying / multiple runs -->
+          <div v-if="!isEditMode && existingRunsCount > 0" class="existing-runs-notice">
+            <span class="notice-icon">💡</span>
+            <span><strong>Rejugada / Nueva partida:</strong> Ya tienes {{ existingRunsCount }} partida(s) de este juego en tu biblioteca. Se añadirá como una nueva entrada independiente.</span>
+          </div>
+
           <!-- Form -->
           <form class="modal-form" @submit.prevent="handleSubmit">
             <!-- Platform -->
@@ -322,10 +328,37 @@ const form = ref({
 const saving = ref(false);
 const validationError = ref('');
 const currentUser = ref<User | null>(null);
+const existingRunsCount = ref(0);
+
+async function checkExistingRuns() {
+  if (isEditMode.value) return;
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data } = await supabase
+        .from('library_items')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('game_id', currentGame.value.igdb_id);
+      existingRunsCount.value = data?.length || 0;
+    } else {
+      const local = JSON.parse(localStorage.getItem('libraryItems') || '[]');
+      const matches = local.filter((i: any) => i.game?.igdb_id === currentGame.value.igdb_id || i.game_id === currentGame.value.igdb_id);
+      existingRunsCount.value = matches.length;
+    }
+  } catch {
+    existingRunsCount.value = 0;
+  }
+}
+
+watch(currentGame, () => {
+  checkExistingRuns();
+}, { immediate: true });
 
 onMounted(async () => {
   const { data } = await supabase.auth.getUser();
   currentUser.value = data.user;
+  checkExistingRuns();
 
   // Pre-rellenar formulario en modo edición
   if (props.existingItem) {
@@ -431,7 +464,7 @@ async function handleSubmit() {
   } catch (err: any) {
     console.error('Error saving:', err);
     if (err?.message?.includes('unique') || err?.code === '23505') {
-      validationError.value = `Ya tienes "${currentGame.value.title}" en ${form.value.platform} en tu biblioteca.`;
+      validationError.value = `⚠️ Tu base de datos de Supabase tiene una restricción de juego único. Para permitir múltiples partidas del mismo juego en Supabase, ejecuta en tu Editor SQL: ALTER TABLE library_items DROP CONSTRAINT IF EXISTS unique_user_game_platform;`;
     } else {
       validationError.value = err?.message || 'Error al guardar. Intenta de nuevo.';
     }
@@ -874,5 +907,22 @@ select.input-field option {
 
 input[type="date"].input-field {
   color-scheme: dark;
+}
+
+.existing-runs-notice {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.75rem 1.25rem;
+  background: rgba(6, 182, 212, 0.1);
+  border-bottom: 1px solid rgba(6, 182, 212, 0.25);
+  color: var(--color-accent-cyan, #38bdf8);
+  font-size: 0.825rem;
+  line-height: 1.4;
+}
+
+.notice-icon {
+  font-size: 1.1rem;
+  flex-shrink: 0;
 }
 </style>
