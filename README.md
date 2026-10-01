@@ -128,6 +128,8 @@ Abre [http://localhost:4321](http://localhost:4321) en tu navegador.
 ## 📦 Scripts Disponibles
 
 - `npm run dev`: Inicia el servidor de desarrollo local de Astro.
+- `npm run test`: Ejecuta la suite completa de pruebas unitarias con Vitest.
+- `npm run test:watch`: Ejecuta las pruebas en modo interactivo/watch.
 - `npm run db:start`: Inicia la base de datos local de Supabase con Docker.
 - `npm run db:stop`: Detiene los contenedores locales de Supabase.
 - `npm run db:status`: Muestra el estado y claves de la API local de Supabase.
@@ -137,6 +139,19 @@ Abre [http://localhost:4321](http://localhost:4321) en tu navegador.
 
 ---
 
+## 🧪 Pruebas Automáticas
+
+El proyecto cuenta con una suite de pruebas unitarias basadas en **Vitest** y **Vue Test Utils** que validan componentes clave (`LibraryGrid`, `AddGameModal`, `GameSearch`, `StatsDashboard`) y utilidades de la plataforma (`platforms.ts`).
+
+> [!IMPORTANT]
+> **Normas de desarrollo e integración continua**:
+> 1. **Mantenimiento y creación de pruebas**: Ante cualquier cambio en el código o nueva funcionalidad, se debe añadir nuevos tests o actualizar las pruebas existentes que se vean afectadas.
+> 2. **Verificación previa a finalización**: Tras realizar cambios, **SIEMPRE** se debe ejecutar `npm run test` y `npm run build` para validar que todas las pruebas pasen al 100% y la compilación sea totalmente limpia.
+
+
+---
+
 ## 📄 Licencia
 
 Este proyecto está bajo la Licencia MIT. ¡Siéntete libre de hacer un fork, mejorarlo y contribuir!
+
