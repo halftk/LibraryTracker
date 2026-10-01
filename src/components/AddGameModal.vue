@@ -315,19 +315,19 @@ const isEditMode = computed(() => !!props.existingItem);
 // Editable copy of current linked game
 const currentGame = ref<IGDBGame>({ ...props.game });
 
-watch(() => props.game, (newGame) => {
-  if (newGame) {
-    currentGame.value = { ...newGame };
-    searchQuery.value = newGame.title || '';
-  }
-}, { immediate: true });
-
 // Search panel to change linked game
 const showSearchPanel = ref(false);
 const searchQuery = ref(props.game.title || '');
 const searching = ref(false);
 const searchDone = ref(false);
 const searchResults = ref<IGDBGame[]>([]);
+
+watch(() => props.game, (newGame) => {
+  if (newGame) {
+    currentGame.value = { ...newGame };
+    searchQuery.value = newGame.title || '';
+  }
+}, { immediate: true });
 
 async function performSearch() {
   const q = searchQuery.value.trim();
