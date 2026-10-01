@@ -111,6 +111,9 @@
       <span class="update-toast-text">🚀 Nueva versión disponible</span>
       <button @click="applyUpdate" class="update-toast-btn">Actualizar ahora</button>
     </div>
+
+    <!-- Botón Volver Arriba -->
+    <ScrollToTop />
   </div>
 </template>
 
@@ -120,6 +123,7 @@ import { supabase } from '../lib/supabase';
 import type { User } from '@supabase/supabase-js';
 import LibraryGrid from './LibraryGrid.vue';
 import StatsDashboard from './StatsDashboard.vue';
+import ScrollToTop from './ScrollToTop.vue';
 
 const user = ref<User | null>(null);
 const authLoading = ref(true);
