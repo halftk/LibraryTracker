@@ -70,12 +70,12 @@ LibraryTracker/
 
 ---
 
-## 🚀 Guía de Instalación Local (Para Forks)
+## 🚀 Guía de Instalación Local
 
 ### 1. Requisitos Previos
 
 - [Node.js](https://nodejs.org/) v18.0.0 o superior.
-- Una cuenta en [Supabase](https://supabase.com/).
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (opcional pero recomendado para ejecutar Supabase en local sin tocar producción).
 - Una cuenta de desarrollador en [Twitch Developers](https://dev.twitch.tv/) para obtener credenciales de la API de IGDB.
 
 ### 2. Clonar el Repositorio e Instalar Dependencias
@@ -86,25 +86,34 @@ cd LibraryTracker
 npm install
 ```
 
-### 3. Configurar las Variables de Entorno
+### 3. Opción A: Desarrollo Local Independiente con Supabase (Docker) — Recomendado
 
-Crea un archivo `.env` en la raíz del proyecto basándote en la siguiente plantilla:
+Para desarrollar en local **sin modificar la base de datos de producción**:
 
-```env
-# Supabase (Client-side & Server-side)
-PUBLIC_SUPABASE_URL=https://tu-proyecto.supabase.co
-PUBLIC_SUPABASE_ANON_KEY=tu-supabase-anon-key
+1. Asegúrate de tener **Docker Desktop** abierto.
+2. Inicia la base de datos local de Supabase:
+   ```bash
+   npx supabase start
+   ```
+   *Esto creará e iniciará automáticamente los contenedores locales (PostgreSQL, Auth, Studio) y aplicará la migración inicial de [`supabase/migrations`](file:///c:/Users/halft/Documents/Coding%20Projects/LibraryTracker/supabase/migrations).*
+3. Copia el archivo de variables locales:
+   ```bash
+   cp .env.local.example .env.local
+   ```
+4. Abre el panel de administración local de Supabase Studio en [http://127.0.0.1:54323](http://127.0.0.1:54323).
 
-# IGDB / Twitch OAuth2 (Server-side)
-TWITCH_CLIENT_ID=tu-twitch-client-id
-TWITCH_CLIENT_SECRET=tu-twitch-client-secret
-```
+### 4. Opción B: Conexión Directa a Supabase Cloud (Producción)
 
-### 4. Configurar la Base de Datos en Supabase
+Si prefieres usar un proyecto remoto de Supabase:
 
-1. Abre el panel de tu proyecto en Supabase ➔ **SQL Editor**.
-2. Copia todo el contenido del archivo [`database_schema.md`](file:///c:/Users/halft/Documents/Coding%20Projects/LibraryTracker/database_schema.md).
-3. Ejecuta el script para crear las tablas (`profiles`, `games`, `library_items`, `reviews`), tipos `ENUM`, triggers y políticas **RLS**.
+1. Crea un archivo `.env` en la raíz del proyecto basándote en `.env.example`:
+   ```env
+   PUBLIC_SUPABASE_URL=https://tu-proyecto.supabase.co
+   PUBLIC_SUPABASE_ANON_KEY=tu-supabase-anon-key
+   TWITCH_CLIENT_ID=tu-twitch-client-id
+   TWITCH_CLIENT_SECRET=tu-twitch-client-secret
+   ```
+2. Ejecuta el script SQL [`database_schema.md`](file:///c:/Users/halft/Documents/Coding%20Projects/LibraryTracker/database_schema.md) en el **SQL Editor** de tu proyecto en Supabase Cloud.
 
 ### 5. Iniciar el Servidor de Desarrollo
 
@@ -112,13 +121,17 @@ TWITCH_CLIENT_SECRET=tu-twitch-client-secret
 npm run dev
 ```
 
-Abre [http://localhost:4321](http://localhost:4321) en tu navegador para ver la aplicación en funcionamiento.
+Abre [http://localhost:4321](http://localhost:4321) en tu navegador.
 
 ---
 
 ## 📦 Scripts Disponibles
 
 - `npm run dev`: Inicia el servidor de desarrollo local de Astro.
+- `npm run db:start`: Inicia la base de datos local de Supabase con Docker.
+- `npm run db:stop`: Detiene los contenedores locales de Supabase.
+- `npm run db:status`: Muestra el estado y claves de la API local de Supabase.
+- `npm run db:reset`: Reinicia la base de datos local y vuelve a ejecutar todas las migraciones.
 - `npm run build`: Compila la aplicación para producción (adaptador Vercel).
 - `npm run preview`: Previsualiza la build de producción localmente.
 

@@ -9,7 +9,11 @@
     "dev": "set ASTRO_DISABLE_DAEMON=true && astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "db:start": "npx supabase start",
+    "db:stop": "npx supabase stop",
+    "db:status": "npx supabase status",
+    "db:reset": "npx supabase db reset"
   },
   "dependencies": {
     "@astrojs/vercel": "^11.0.11",

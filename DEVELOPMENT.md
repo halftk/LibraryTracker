@@ -44,13 +44,23 @@ PUBLIC_SUPABASE_ANON_KEY="tu-anon-key-publica"
 npm install
 ```
 
-### 3.2 Iniciar servidor local
+### 3.2 Iniciar la base de datos local de Supabase (Docker)
+Para no modificar la base de datos de producción durante el desarrollo local:
+```bash
+# Iniciar contenedores locales (PostgreSQL + Auth + Studio en http://127.0.0.1:54323)
+npm run db:start
+
+# Crear archivo .env.local a partir de la plantilla
+cp .env.local.example .env.local
+```
+
+### 3.3 Iniciar servidor de desarrollo Astro
 ```bash
 npm run dev
 ```
-El servidor local se iniciará en `http://localhost:4321`. Podrás probar las rutas SSR y la interacción con los componentes de Vue 3 en tiempo real.
+El servidor local se iniciará en `http://localhost:4321`. Vite cargará automáticamente las variables de `.env.local` conectando exclusivamente al Supabase local (`http://127.0.0.1:54321`).
 
-### 3.3 Verificación y Compilación de Producción
+### 3.4 Verificación y Compilación de Producción
 Antes de subir cualquier cambio o hacer deploy, verifica que no haya errores de compilación:
 ```bash
 npm run build
