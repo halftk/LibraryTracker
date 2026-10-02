@@ -149,4 +149,55 @@ DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
     AFTER INSERT ON auth.users
     FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- 11. Sección Libros (books & book_library_items)
+DO $$ 
+BEGIN 
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'book_status') THEN 
+        CREATE TYPE book_status AS ENUM ('Pendiente', 'Leyendo', 'Leído', 'Abandonado', 'Prestado'); 
+    END IF; 
+END $$;
+
+CREATE TABLE IF NOT EXISTS public.books (
+    id TEXT PRIMARY KEY,
+    title TEXT NOT NULL,
+    authors TEXT[] DEFAULT '{}',
+    cover_url TEXT,
+    published_year INT,
+    publisher TEXT,
+    page_count INT,
+    categories TEXT[] DEFAULT '{}',
+    isbn TEXT,
+    description TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS public.book_library_items (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    book_id TEXT NOT NULL REFERENCES public.books(id) ON DELETE CASCADE,
+    format TEXT NOT NULL DEFAULT 'Físico',
+    status book_status NOT NULL DEFAULT 'Pendiente',
+    start_date DATE,
+    finish_date DATE,
+    current_page INT DEFAULT 0 CHECK (current_page >= 0),
+    total_pages INT DEFAULT 0 CHECK (total_pages >= 0),
+    rating NUMERIC(2, 1) CHECK (rating IS NULL OR (rating >= 0 AND rating <= 5)),
+    notes TEXT,
+    lent_to TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
+);
+
+ALTER TABLE public.books ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.book_library_items ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Books cache readable by everyone" ON public.books FOR SELECT USING (true);
+CREATE POLICY "Authenticated users can cache books" ON public.books FOR INSERT TO authenticated WITH CHECK (true);
+
+CREATE POLICY "Users can read own book library items" ON public.book_library_items FOR SELECT TO authenticated USING (auth.uid() = user_id);
+CREATE POLICY "Users can insert own book library items" ON public.book_library_items FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can update own book library items" ON public.book_library_items FOR UPDATE TO authenticated USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can delete own book library items" ON public.book_library_items FOR DELETE TO authenticated USING (auth.uid() = user_id);
 ```
+

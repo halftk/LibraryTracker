@@ -250,6 +250,15 @@ const applyUpdate = () => {
 };
 
 onMounted(async () => {
+  if (typeof localStorage !== 'undefined') {
+    const savedTab = localStorage.getItem('library_active_tab');
+    if (savedTab === 'books' || savedTab === 'games') {
+      setTab(savedTab);
+    } else {
+      setTab('games');
+    }
+  }
+
   window.addEventListener('app-update-available', () => {
     updateAvailable.value = true;
   });
@@ -264,6 +273,7 @@ onMounted(async () => {
     authLoading.value = false;
   });
 });
+
 
 onUnmounted(() => {
   window.removeEventListener('library-updated', refreshAll);

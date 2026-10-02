@@ -250,8 +250,12 @@ async function saveItem() {
       localStorage.setItem('bookLibraryItems', JSON.stringify(stored));
       emit(props.existingItem ? 'updated' : 'added');
     }
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('library-updated'));
+    }
     emit('close');
   } catch (err) {
+
     console.error('Error saving book item:', err);
     alert('Error al guardar el libro. Por favor inténtalo de nuevo.');
   } finally {

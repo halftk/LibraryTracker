@@ -133,7 +133,7 @@
           <!-- Reading Progress Bar if total pages is set -->
           <div v-if="item.status === 'Leyendo' && item.total_pages > 0" class="progress-bar-wrapper">
             <div class="progress-info">
-              <span>Progreso: {{ item.current_page }} / {{ item.total_pages }} pág.</span>
+              <span>{{ item.current_page }} / {{ item.total_pages }} pág.</span>
               <span>{{ Math.round((item.current_page / item.total_pages) * 100) }}%</span>
             </div>
             <div class="progress-track">
@@ -150,7 +150,7 @@
 
           <!-- Stars -->
           <div v-if="item.rating" class="card-rating" :title="`${item.rating}/5 — ${getRatingLabel(item.rating)}`">
-            <span v-for="s in 5" :key="s" :class="['star-small', { filled: s <= item.rating }]">★</span>
+            <span v-for="s in 5" :key="s" :class="['star-small', { filled: s <= item.rating }]" :title="`${s} - ${getRatingLabel(s)}`">★</span>
           </div>
 
           <!-- Lent to badge -->
@@ -175,6 +175,7 @@
         </div>
       </div>
     </TransitionGroup>
+
 
     <!-- Empty State -->
     <div v-if="filteredItems.length === 0 && !loading" class="empty-state">
@@ -427,10 +428,22 @@ function refresh() {
 
 defineExpose({ refresh });
 
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
+
 onMounted(() => {
   loadItems();
+  if (typeof window !== 'undefined') {
+    window.addEventListener('library-updated', loadItems);
+  }
+});
+
+onUnmounted(() => {
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('library-updated', loadItems);
+  }
 });
 </script>
+
 
 <style scoped>
 .book-library-section {
@@ -551,6 +564,7 @@ onMounted(() => {
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  padding: 0 !important;
 }
 
 .book-card.is-masterpiece {
@@ -568,19 +582,64 @@ onMounted(() => {
   opacity: 1;
 }
 
+.card-cover-wrapper {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
+  border-radius: 12px 12px 0 0;
+}
+
+.card-cover {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.book-card:hover .card-cover {
+  transform: scale(1.05);
+}
+
+.card-cover-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-bg-card-hover);
+  font-size: 3rem;
+}
+
+.card-badge {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+}
+
+.format-badge {
+  position: absolute;
+  bottom: 0.5rem;
+  left: 0.5rem;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
+  color: white;
+  font-size: 0.7rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+}
+
 .card-info {
-  padding: 1rem;
+  padding: 0.75rem;
+  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 0.375rem;
-  flex: 1;
+  gap: 0.25rem;
 }
 
 .card-title {
-  font-size: 0.95rem;
-  font-weight: 700;
-  line-height: 1.3;
-  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -589,40 +648,40 @@ onMounted(() => {
 
 .card-meta {
   font-size: 0.75rem;
-  color: var(--color-text-secondary);
-  margin: 0;
+  color: var(--color-text-muted);
+  margin-bottom: 0.2rem;
 }
 
 .finish-date-row {
   font-size: 0.75rem;
-  color: var(--color-text-secondary);
-  margin: 0;
+  margin-bottom: 0.375rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
 }
 
 .finish-date-tag {
-  color: var(--color-accent-emerald);
-  font-weight: 600;
+  color: var(--color-accent-emerald, #10b981);
+  font-weight: 500;
 }
 
 .card-rating {
   display: flex;
-  gap: 0.15rem;
-  margin-top: 0.25rem;
+  gap: 0.125rem;
 }
 
 .star-small {
-  font-size: 0.85rem;
-  color: var(--color-border);
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
 }
 
 .star-small.filled {
-  color: #f59e0b;
+  color: var(--color-accent-amber);
 }
 
 .lent-info {
-  font-size: 0.75rem;
-  color: var(--color-accent-amber);
-  font-weight: 600;
+  font-size: 0.7rem;
+  color: var(--color-accent-secondary);
   margin-top: 0.25rem;
 }
 
@@ -631,6 +690,7 @@ onMounted(() => {
   top: 0.5rem;
   right: 0.5rem;
   display: flex;
+  flex-direction: column;
   gap: 0.375rem;
   opacity: 0;
   transition: opacity 0.2s ease;
@@ -640,14 +700,14 @@ onMounted(() => {
 .action-btn {
   width: 32px;
   height: 32px;
-  border-radius: 8px;
-  border: 1px solid var(--color-border);
-  background: rgba(15, 23, 42, 0.85);
-  backdrop-filter: blur(8px);
-  color: var(--color-text-primary);
   display: flex;
   align-items: center;
   justify-content: center;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  color: var(--color-text-secondary);
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -657,16 +717,17 @@ onMounted(() => {
 }
 
 .edit-btn:hover {
-  background: var(--color-accent-primary);
+  background: rgba(124, 58, 237, 0.3);
   border-color: var(--color-accent-primary);
-  color: white;
+  color: var(--color-accent-primary);
 }
 
 .delete-btn:hover {
-  background: var(--color-accent-rose);
+  background: rgba(244, 63, 94, 0.3);
   border-color: var(--color-accent-rose);
-  color: white;
+  color: var(--color-accent-rose);
 }
+
 
 @media (max-width: 640px) {
   .library-grid {
