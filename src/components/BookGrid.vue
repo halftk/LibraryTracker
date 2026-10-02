@@ -117,6 +117,11 @@
             <span>{{ item.status }}</span>
           </span>
 
+          <!-- Re-read badge -->
+          <span v-if="getRunBadgeInfo(item)" class="badge run-badge" :title="'Tienes ' + (getRunBadgeInfo(item)?.totalCount || 0) + ' lectura(s) registrada(s) de este libro'">
+            🔁 {{ getRunBadgeInfo(item)?.badgeText }}
+          </span>
+
           <span class="badge format-badge">
             {{ formatIcon(item.format) }} {{ item.format }}
           </span>
@@ -161,6 +166,11 @@
 
         <!-- Actions -->
         <div class="card-actions">
+          <button class="action-btn replay-btn" title="Registrar otra lectura / relectura" @click="openNewRun(item)">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+            </svg>
+          </button>
           <button class="action-btn edit-btn" title="Editar lectura" @click="openEdit(item)">
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
@@ -193,11 +203,19 @@
       @close="editingItem = null"
       @updated="handleUpdated"
     />
+
+    <!-- Add New Reading Run Modal -->
+    <AddBookModal
+      v-if="addingNewRunBook"
+      :book="addingNewRunBook"
+      @close="addingNewRunBook = null"
+      @added="handleNewRunAdded"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import { supabase, getBookLibraryItems, deleteBookLibraryItemFromDB } from '../lib/supabase';
 import type { User } from '@supabase/supabase-js';
 import AddBookModal from './AddBookModal.vue';
@@ -413,8 +431,68 @@ async function deleteItem(id: string) {
   }
 }
 
+const addingNewRunBook = ref<any>(null);
+
+function openNewRun(item: BookLibraryItem) {
+  addingNewRunBook.value = {
+    id: item.book.id,
+    title: item.book.title,
+    authors: item.book.authors || [],
+    cover_url: item.book.cover_url,
+    published_year: item.book.published_year,
+    publisher: item.book.publisher,
+    page_count: item.book.page_count,
+    categories: item.book.categories || [],
+    isbn: item.book.isbn,
+    description: item.book.description,
+  };
+}
+
+function getItemTimestamp(item: BookLibraryItem): number {
+  if (item.finish_date) {
+    const t = new Date(item.finish_date).getTime();
+    if (!isNaN(t)) return t;
+  }
+  if (item.start_date) {
+    const t = new Date(item.start_date).getTime();
+    if (!isNaN(t)) return t;
+  }
+  if (item.created_at) {
+    const t = new Date(item.created_at).getTime();
+    if (!isNaN(t)) return t;
+  }
+  return 0;
+}
+
+function getRunBadgeInfo(item: BookLibraryItem): { badgeText: string; totalCount: number } | null {
+  const sameBookItems = items.value.filter(i => i.book.id === item.book.id);
+  if (sameBookItems.length <= 1) return null;
+
+  const sorted = [...sameBookItems].sort((a, b) => {
+    const timeA = getItemTimestamp(a);
+    const timeB = getItemTimestamp(b);
+    if (timeA !== timeB) return timeA - timeB;
+    const createdA = a.created_at ? new Date(a.created_at).getTime() : 0;
+    const createdB = b.created_at ? new Date(b.created_at).getTime() : 0;
+    return createdA - createdB;
+  });
+
+  const index = sorted.findIndex(i => i.id === item.id);
+  if (index === -1) return null;
+
+  return {
+    badgeText: `${index + 1}ª Lectura`,
+    totalCount: sameBookItems.length,
+  };
+}
+
 function openEdit(item: BookLibraryItem) {
   editingItem.value = { ...item };
+}
+
+function handleNewRunAdded() {
+  addingNewRunBook.value = null;
+  loadItems();
 }
 
 function handleUpdated() {
@@ -427,8 +505,6 @@ function refresh() {
 }
 
 defineExpose({ refresh });
-
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 
 onMounted(() => {
   loadItems();
@@ -716,6 +792,12 @@ onUnmounted(() => {
   transform: scale(1.1);
 }
 
+.replay-btn:hover {
+  background: rgba(6, 182, 212, 0.3);
+  border-color: var(--color-accent-cyan);
+  color: var(--color-accent-cyan);
+}
+
 .edit-btn:hover {
   background: rgba(124, 58, 237, 0.3);
   border-color: var(--color-accent-primary);
@@ -726,6 +808,19 @@ onUnmounted(() => {
   background: rgba(244, 63, 94, 0.3);
   border-color: var(--color-accent-rose);
   color: var(--color-accent-rose);
+}
+
+.run-badge {
+  position: absolute;
+  bottom: 0.5rem;
+  right: 0.5rem;
+  background: rgba(124, 58, 237, 0.9);
+  backdrop-filter: blur(4px);
+  color: #ffffff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
 }
 
 

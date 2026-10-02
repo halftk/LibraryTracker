@@ -130,4 +130,48 @@ describe('BookGrid.vue', () => {
     const remainingCards = wrapper.findAll('.book-card');
     expect(remainingCards.length).toBe(1);
   });
+
+  it('displays re-read badges when multiple readings exist for the same book', async () => {
+    const reReadItems = [
+      ...mockBookItems,
+      {
+        id: 'book-item-3',
+        book: mockBookItems[0].book, // Same book "Cien años de soledad"
+        format: 'Ebook',
+        status: 'Leído',
+        start_date: '2024-01-01',
+        finish_date: '2024-01-15',
+        current_page: 471,
+        total_pages: 471,
+        rating: 5,
+        lent_to: null,
+        notes: null,
+        created_at: '2024-01-01T00:00:00Z',
+      },
+    ];
+    localStorage.setItem('bookLibraryItems', JSON.stringify(reReadItems));
+
+    const wrapper = mountGrid();
+    await flushPromises();
+
+    const runBadges = wrapper.findAll('.run-badge');
+    expect(runBadges.length).toBe(2);
+    const texts = runBadges.map(b => b.text());
+    expect(texts).toContain('🔁 1ª Lectura');
+    expect(texts).toContain('🔁 2ª Lectura');
+  });
+
+  it('opens AddBookModal when replay button is clicked', async () => {
+    const wrapper = mountGrid();
+    await flushPromises();
+
+    const replayBtn = wrapper.find('.replay-btn');
+    expect(replayBtn.exists()).toBe(true);
+
+    await replayBtn.trigger('click');
+    await flushPromises();
+
+    const modal = wrapper.findComponent({ name: 'AddBookModal' });
+    expect(modal.exists()).toBe(true);
+  });
 });
