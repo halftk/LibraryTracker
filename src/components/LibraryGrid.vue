@@ -114,10 +114,87 @@
       <div
         v-for="item in displayedItems"
         :key="item.id"
-        :class="['game-card card', { 'is-masterpiece': item.rating === 5 }]"
+        :class="['game-card', { 'is-masterpiece': item.rating === 5 }]"
       >
         <!-- Cover -->
-        <div class="card-cover-wrapper">
+        <div
+          class="card-cover-wrapper"
+          :class="{
+            'has-switch2-banner': isSwitch2(item.platform),
+            'has-nds-spine': isNDS(item.platform),
+            'has-3ds-spine': is3DS(item.platform),
+            'has-wii-banner': isWii(item.platform)
+          }"
+        >
+          <!-- Physical Box Art Banner for Nintendo Switch 2 -->
+          <div v-if="isSwitch2(item.platform)" class="box-art-header header-switch2" title="Nintendo Switch 2">
+            <svg class="ns2-banner-logo-svg" viewBox="0 -1.799 540.1 466.3">
+              <path fill="#ffffff" d="m31.3 340.101 19.7 26.6h7.8v-39.7h-8.1v26.1l-19.5-26.1h-8v39.7h8.1zm193.9-13.2h-33.7v8.4h12.7v31.4h8.5v-31.3h12.4zm-2.4 135h16.7v-75h-16.7zm-87.1-121.8 19.7 26.6h7.8v-39.7h-8.1v26.1l-19.5-26.1h-8v39.7h8.1zm37.7 101.2-15.9-54.4h-13.3l-15.8 54.2-14.4-54.2h-16.3l21.2 75h18l14-49.4 13.9 49.4h18.1l21.3-75h-16.3zm-119.1-24.9c-10.8-1.8-17.8-3.8-17.8-8.8 0-5.8 7.8-8.1 18.2-8.1 9.7 0 19.5 3.7 22.9 5.2l5.3-13c-3.8-1.5-15.7-5.8-29-5.8-16.2 0-33.4 7.9-33.4 22.5 0 11.9 8.4 17.9 29.9 21.6 15.1 2.6 23.5 4 23.3 10.6-.1 3.6-2.9 9.6-20 9.6-13.7 0-23.4-5-26.8-7l-7.1 12.8c3.8 2 16.5 7.9 32.8 7.9 23.8 0 36.4-8.3 36.4-23.9.1-9-3-18.4-34.7-23.6m43.4-89.5h-8.8v39.7h8.8zm256 39.7v-39.7h-8v26.1l-19.5-26.1h-8v39.7h8.1v-26.6l19.7 26.6zm-68.5-7.3h-22.8v-9.3h21.1v-7.2h-21.1v-8.6h22.8v-7.3h-30.9v39.7h30.9zm185.8-33.7c-11.7 0-21.2 9.5-21.2 21.2s9.5 21.2 21.2 21.2 21.2-9.5 21.2-21.2-9.5-21.2-21.2-21.2m0 33.6c-6.8 0-12.3-5.5-12.3-12.4 0-6.8 5.5-12.4 12.3-12.4s12.3 5.5 12.3 12.4c.1 6.8-5.5 12.4-12.3 12.4m2.7 57.3h-35v-29.5h-15.5v75h15.5v-29.9h35v29.9h15.5v-75h-15.5zm-216-13.6h23.9v59.1h16.1v-59.1h23.4v-15.9h-63.4zm115.6-1.7c8.5 0 16.3 4.5 20.6 11.6l12.2-10.6c-7.5-11.1-19.8-17.7-33.2-17.7-22 0-40 17.9-40 40s18 40 40 40c13.4 0 25.8-6.6 33.2-17.7l-12.2-10.6c-4.2 7.1-12.1 11.6-20.6 11.6-13.1 0-23.8-10.5-23.8-23.3s10.7-23.3 23.8-23.3m30.4-74.3h-16.4v39.7h16.4c11.3 0 20.4-8.9 20.4-19.9s-9.1-19.8-20.4-19.8m.4 31.4h-8.7v-23h8.7c6.4 0 11.5 5.2 11.5 11.5.1 6.4-5.1 11.5-11.5 11.5m-277-354.1h-58.5c-37.9 0-68.6 30.7-68.6 68.6v130.4c0 37.9 30.7 68.6 68.6 68.6h58.5c1.1 0 2-.9 2-2v-263.6c0-1.1-.8-2-2-2zm-19.6 246.1h-38.9c-12.6 0-24.4-4.9-33.3-13.8s-13.8-20.7-13.8-33.3v-130.3c0-12.6 4.9-24.4 13.8-33.3s20.7-13.8 33.3-13.8h38.9zm-40.7-190.9c13.9 0 25.2 11.3 25.2 25.2s-11.2 25.1-25.2 25.1c-13.9 0-25.1-11.3-25.1-25.2 0-13.8 11.3-25.1 25.1-25.1zm132.2-55.2h-41.4c-1 0-1.7.8-1.7 1.8v264c0 1.1.9 2 1.9 2h41.2c37.9 0 68.6-30.7 68.6-68.6v-130.5c.1-37.9-30.7-68.6-68.6-68.7zm9.8 174.3c-15 0-27.1-12.1-27.1-27.1 0-14.9 12.1-27.1 27.1-27.1 14.9 0 27.1 12.1 27.1 27.1s-12.1 27.1-27.1-27.1zm104 93.4v-46c4.8-3.9 22.7-19.4 41.7-35.7 17.1-14.7 34.2-29.5 51.6-43.8 13.1-10.8 38.1-30.6 38.8-50 .9-22.8-15.3-37.6-39.4-37.6-14.4 0-31.3 8-41.6 16.7s-23.4 20-23.4 20l-37.9-41.1c32.2-36.1 66.8-54.3 102.8-54.3 76.8-1.9 134.7 83.7 76.3 150.8-21.2 23.4-45.3 45.3-70 64.7h100.3v56.3z"/>
+            </svg>
+          </div>
+
+          <!-- Physical Box Art Corner Badge for Nintendo Switch 1 (Top-left red square block) -->
+          <div v-else-if="isSwitch1(item.platform)" class="box-art-header header-switch1" title="Nintendo Switch">
+            <svg class="ns1-badge-logo-svg" viewBox="0 0 283.5 283.5">
+              <rect fill="#E60012" width="283.5" height="283.5"/>
+              <path fill="#FFFFFF" d="M128.4,241.6h6.7v-30h-6.7V241.6z M93.6,192.8l7.9,10.6h3.1v-15.9h-3.2V198l-7.8-10.4h-3.2v15.9h3.2V192.8z M129.4,187.5h-13.5v3.4h5.1v12.5h3.4v-12.5h5V187.5z M108.7,233.3l-6.4-21.8H97l-6.3,21.7l-5.8-21.7h-6.5l8.5,30h7.2l5.6-19.8l5.6,19.8h7.2l8.5-30h-6.5L108.7,233.3z M153.8,168.1h19.6c18,0,32.6-14.6,32.6-32.6v-62c0-18-14.6-32.6-32.6-32.6h-19.7c-0.5,0-0.8,0.4-0.8,0.8v125.5C152.9,167.7,153.3,168.1,153.8,168.1z M178,98c7.1,0,12.9,5.8,12.9,12.9c0,7.1-5.8,12.9-12.9,12.9c-7.1,0-12.9-5.8-12.9-12.9C165.2,103.8,170.9,98,178,98z M78.4,187.5h-3.5v15.9h3.5V187.5z M51.8,192.8l7.9,10.6h3.1v-15.9h-3.2V198l-7.8-10.4h-3.2v15.9h3.2V192.8z M61.2,223.4l-0.2,0c-3.7-0.6-6.8-1.2-7.1-3.3c0-0.3,0-1,0.5-1.7c1-1.2,3.3-1.7,6.7-1.7c3.9,0,7.8,1.5,9.2,2.1l2.1-5.2c-1.5-0.6-6.3-2.3-11.6-2.3c-6.5,0-13.4,3.2-13.4,9c0,4.7,3.3,7.2,11.9,8.7c6.1,1,9.4,1.6,9.3,4.2c-0.1,1.4-1.2,3.8-8,3.8c-5.5,0-9.4-2-10.7-2.8l-2.8,5.1c1.5,0.8,6.6,3.2,13.1,3.2c9.5,0,14.6-3.3,14.6-9.6C74.9,228.4,72.7,225.4,61.2,223.4z M98.6,79.1c0,6.6,5.4,12,12,12c6.6,0,12-5.4,12-12c0-6.6-5.4-12-12-12C103.9,67.1,98.6,72.4,98.6,79.1z M153.4,200.5h-9.1v-3.7h8.4v-2.9h-8.4v-3.4h9.1v-2.9l-12.4,0v15.9l12.4,0V200.5z M227.8,187c-4.7,0-8.5,3.8-8.5,8.5c0,4.7,3.8,8.5,8.5,8.5c4.7,0,8.5-3.8,8.5-8.5C236.2,190.8,232.4,187,227.8,187z M227.8,200.4c-2.7,0-4.9-2.2-4.9-4.9c0-2.7,2.2-4.9,4.9-4.9c2.7,0,4.9,2.2,4.9,4.9C232.7,198.2,230.5,200.4,227.8,200.4z M228.8,223.4h-14v-11.8h-6.2v30h6.2v-12h14v12h6.2v-30h-6.2V223.4z M237.5,238.5h1.3v3.1h0.7v-3.1h1.2v-0.7h-3.2V238.5z M244.4,237.7l-1,2.8l-1-2.8h-1.1v3.8h0.7v-2.9l1,2.9l0,0h0.7l0,0l1-2.9v2.9h0.7v-3.8H244.4z M188.7,217.3c3.4,0,6.5,1.8,8.2,4.7l4.9-4.2c-3-4.4-7.9-7.1-13.3-7.1c-8.8,0-16,7.2-16,16c0,8.8,7.2,16,16,16c5.4,0,10.3-2.6,13.3-7.1l-4.9-4.2c-1.7,2.8-4.8,4.7-8.2,4.7c-5.2,0-9.5-4.2-9.5-9.3S183.4,217.3,188.7,217.3z M142.4,217.9h9.6v23.6h6.5v-23.6h9.4v-6.4h-25.4V217.9z M180.8,203.4v-15.9h-3.2V198l-7.8-10.4h-3.2v15.9h3.2v-10.6l7.9,10.6H180.8z M139.2,40.9h-27.8c-18,0-32.6,14.6-32.6,32.6v62c0,18,14.6,32.6,32.6,32.6h27.8c0.5,0,0.9-0.4,0.9-0.9V41.8C140.1,41.3,139.7,40.9,139.2,40.9z M129.9,157.9h-18.5c-6,0-11.6-2.3-15.8-6.6c-4.2-4.2-6.6-9.8-6.6-15.8v-62c0-6,2.3-11.6,6.6-15.8c4.2-4.2,9.8-6.6,15.8-6.6h18.5V157.9z M200.8,187.5h-6.6v15.9h6.6c4.5,0,8.2-3.6,8.2-7.9C209,191.1,205.3,187.5,200.8,187.5z M201,200.1h-3.5v-9.2h3.5c2.5,0,4.6,2.1,4.6,4.6C205.6,198,203.5,200.1,201,200.1z"/>
+            </svg>
+          </div>
+
+          <!-- Physical Box Art Side-Bar for Nintendo DS (Left vertical white stripe) -->
+          <div v-else-if="isNDS(item.platform)" class="box-art-header header-ds" title="Nintendo DS">
+            <svg class="nds-spine-logo" viewBox="0 0 219.8 30.6">
+              <g>
+                <path fill="#8C8C8C" fill-rule="evenodd" clip-rule="evenodd" d="M136.1,27.6c0,0.3-0.3,0.6-0.6,0.6h-11.4c-0.3,0-0.6-0.3-0.6-0.6v-8.2c0-0.3,0.3-0.6,0.6-0.6h11.4c0.3,0,0.6,0.3,0.6,0.6V27.6 M135.6,16.3H124c-1.7,0-3,1.4-3,3.1v8.3c0,1.7,1.4,3,3,3h11.6c1.7,0,3-1.4,3-3v-8.3C138.7,17.6,137.3,16.3,135.6,16.3z"/>
+                <path fill="#333333" fill-rule="evenodd" clip-rule="evenodd" d="M0,0.2c0.1,0,2.2,0,2.3,0L13,10.6c0,0,0-10.3,0-10.5c0.1,0,2.1,0,2.1,0s0.4,0,0.5,0c0,0.2,0,14.2,0,14.4c-0.1,0-2,0-2.1,0L2.7,3.9c0,0,0,10.5,0,10.6c-0.1,0-2.5,0-2.7,0C0,14.4,0,0.3,0,0.2"/>
+                <path fill="#333333" fill-rule="evenodd" clip-rule="evenodd" d="M29.3,3.9c0,0,0,10.5,0,10.6c-0.1,0-2.5,0-2.7,0c0-0.2,0-14.2,0-14.4c0.1,0,2.2,0,2.3,0l10.8,10.5c0,0,0-10.3,0-10.5c0.2,0,2.1,0,2.1,0s0.4,0,0.5,0c0,0.2,0,14.2,0,14.4c-0.1,0-2,0-2.1,0L29.3,3.9"/>
+                <path fill="#333333" fill-rule="evenodd" clip-rule="evenodd" d="M84.6,3.9c0,0,0,10.5,0,10.6c-0.1,0-2.5,0-2.7,0c0-0.2,0-14.2,0-14.4c0.1,0,2.2,0,2.3,0L95,10.6c0,0,0-10.3,0-10.5c0.1,0,2.1,0,2.1,0s0.4,0,0.5,0c0,0.2,0,14.2,0,14.4c-0.2,0-2,0-2.1,0L84.6,3.9"/>
+                <path fill="#333333" fill-rule="evenodd" clip-rule="evenodd" d="M22,0.2c0,0,0.4,0,0.5,0c0,0.2,0,14.2,0,14.4c-0.1,0-2.5,0-2.7,0c0-0.2,0-14.2,0-14.4C20,0.2,22,0.2,22,0.2"/>
+                <path fill="#333333" fill-rule="evenodd" clip-rule="evenodd" d="M60.4,0.2c0,0,0.4,0,0.5,0c0,0.1,0,2.3,0,2.5c-0.2,0-6.4,0-6.4,0s0,11.7,0,11.9c-0.1,0-2.6,0-2.8,0c0-0.2,0-11.9,0-11.9s-6.3,0-6.4,0c0-0.1,0-2.3,0-2.5C45.5,0.2,60.4,0.2,60.4,0.2"/>
+                <path fill="#333333" fill-rule="evenodd" clip-rule="evenodd" d="M77.5,0.2c0,0,0.4,0,0.5,0c0,0.1,0,2.3,0,2.5c-0.2,0-11.4,0-11.4,0l0,3.2c0,0,8.7,0,8.8,0c0,0.1,0,2.3,0,2.5c-0.2,0-8.8,0-8.8,0l0,3.7c0,0,11.3,0,11.4,0c0,0.1,0,2.3,0,2.5c-0.2,0-13.9,0-14,0c0-0.2,0-14.2,0-14.4C64.1,0.2,77.5,0.2,77.5,0.2"/>
+                <path fill="#333333" fill-rule="evenodd" clip-rule="evenodd" d="M112.4,12.1h-8.2V2.6h8.2c2.6,0,3.5,2.5,3.5,4.7C115.9,9.5,114.9,12.1,112.4,12.1 M116.8,2.3c-1-1.4-2.6-2.1-4.4-2.1c0,0-10.5,0-10.7,0c0,0.2,0,14.2,0,14.4c0.2,0,10.7,0,10.7,0c1.9,0,3.4-0.7,4.4-2.1c1-1.3,1.5-3,1.5-5.1C118.2,5.3,117.7,3.5,116.8,2.3z"/>
+                <path fill="#333333" fill-rule="evenodd" clip-rule="evenodd" d="M136.1,11.5c0,0.3-0.3,0.6-0.6,0.6h-11.4c-0.3,0-0.6-0.3-0.6-0.6V3.2c0-0.3,0.3-0.6,0.6-0.6h11.4c0.3,0,0.6,0.3,0.6,0.6V11.5 M135.6,0.2H124c-1.7,0-3,1.4-3,3.1v8.3c0,1.7,1.4,3,3,3h11.6c1.7,0,3-1.4,3-3V3.2C138.7,1.5,137.3,0.2,135.6,0.2z"/>
+                <path fill="#333333" fill-rule="evenodd" clip-rule="evenodd" d="M184,24.6c2.8,1.1,8.6,2,13.1,2c5,0,7-1.7,7-3.8c0-1.9-1.9-3.1-7.4-5.1c-7.3-2.7-12.7-4.9-12.7-9.7c0-5,6.5-7.9,16.4-7.9c5.3,0,7.1,0.3,10.5,1l0,4.7c-3.3-0.6-6.2-1.7-10.8-1.7c-4.9,0-7,1.6-7,3.2c0,2.3,3.2,3.4,8.8,5.4c7.8,2.8,12.2,5,12.2,9.7c0,4.9-5.5,8.4-17.8,8.4c-5.1,0-8.5-0.3-12.4-1V24.6"/>
+                <path fill="#333333" fill-rule="evenodd" clip-rule="evenodd" d="M157.8,4.2h-5.9v22.2h5.9c9,0,14.7-3.8,14.7-11C172.4,8.1,166.8,4.2,157.8,4.2 M173.5,28.4c-2.9,1.3-8.4,2.1-13.2,2.1H142V0.1h18.3c4.8,0,10.3,0.8,13.2,2.2c7,3.2,9.3,8.3,9.3,13.1C182.8,20.1,180.6,25.2,173.5,28.4z"/>
+                <polyline fill="#333333" points="215.7,30.2 215.1,30.2 215.1,27.8 214.2,27.8 214.2,27.3 216.5,27.3 216.5,27.8 215.7,27.8 215.7,30.2"/>
+                <polyline fill="#333333" points="219.8,30.2 219.3,30.2 219.3,27.8 219.3,27.8 218.7,30.2 218.2,30.2 217.6,27.8 217.6,27.8 217.6,30.2 217.1,30.2 217.1,27.3 217.9,27.3 218.4,29.6 218.5,29.6 219,27.3 219.8,27.3 219.8,30.2"/>
+              </g>
+            </svg>
+          </div>
+
+          <!-- Physical Box Art Side-Bar for Nintendo 3DS (Right vertical white stripe) -->
+          <div v-else-if="is3DS(item.platform)" class="box-art-header header-3ds" title="Nintendo 3DS">
+            <svg class="n3ds-spine-logo" viewBox="0 0 132 15.6">
+              <g>
+                <path d="M128.7,13.5h0.5V15h0.3v-1.5h0.5v-0.3h-1.3V13.5z M131.9,13.2h-0.4l-0.2,0.7c-0.1,0.2-0.1,0.4-0.2,0.6h0c0-0.2-0.1-0.4-0.2-0.6l-0.2-0.7h-0.4l-0.1,1.7h0.3l0-0.7c0-0.2,0-0.5,0-0.7h0c0,0.2,0.1,0.4,0.2,0.7l0.2,0.7h0.2l0.2-0.7c0.1-0.2,0.2-0.4,0.2-0.7h0c0,0.2,0,0.5,0,0.7l0,0.7h0.3L131.9,13.2z" fill="#222222"/>
+                <path fill="#8C8C8C" d="M68.7,8.3h-5.9c-0.8,0-1.5,0.7-1.5,1.5V14c0,0.8,0.7,1.5,1.5,1.5h5.9c0.8,0,1.5-0.7,1.5-1.5V9.8C70.3,9,69.6,8.3,68.7,8.3 M69,14c0,0.2-0.1,0.3-0.3,0.3h-5.8c-0.2,0-0.3-0.1-0.3-0.3V9.8c0-0.2,0.1-0.3,0.3-0.3h5.8c0.2,0,0.3,0.1,0.3,0.3V14z"/>
+                <path fill="#222222" d="M23,1.4h3.2v6h1.4v-6h3.2V0.1H23V1.4z M20.1,5.4l-5.5-5.3h-1.1v7.3h1.3V2l5.5,5.4h1.1V0.1h-1.3V5.4z M10,7.4h1.4V0.1H10V7.4z M6.6,5.4L1.2,0.1H0v7.3h1.3V2l5.5,5.4h1.1V0.1H6.6V5.4z M32.4,7.4h7.1V6.1h-5.8V4.3h4.5V3h-4.5V1.4h5.8V0.1h-7.1V7.4z M48.1,5.4l-5.5-5.3h-1.2v7.3h1.3V2l5.5,5.4h1.1V0.1h-1.3V5.4z M121.6,6.4c-2.9-1-4.5-1.6-4.5-2.8c0-0.8,1.1-1.6,3.5-1.6c2.3,0,3.8,0.5,5.5,0.9l0-2.4c-1.7-0.3-2.6-0.5-5.3-0.5c-5,0-8.3,1.5-8.3,4c0,2.4,2.7,3.5,6.5,4.9c2.8,1,3.8,1.6,3.8,2.6c0,1.1-1,2-3.6,2c-2.3,0-5.2-0.4-6.7-1v2.6c2,0.3,3.7,0.5,6.3,0.5c6.2,0,9-1.8,9-4.2C127.8,8.9,125.6,7.8,121.6,6.4z M107.2,1.2c-1.5-0.7-4.2-1.1-6.7-1.1h-9.3v15.5h9.3c2.4,0,5.2-0.4,6.7-1.1c3.6-1.6,4.7-4.2,4.7-6.6C112,5.4,110.8,2.8,107.2,1.2z M99.3,13.4h-3V2.2h3c4.6,0,7.4,2,7.4,5.6C106.7,11.5,103.8,13.4,99.3,13.4z M56.9,0.1h-5.4v7.3h5.4c0.9,0,1.7-0.4,2.3-1.1c0.5-0.6,0.8-1.5,0.8-2.6c0-1-0.3-1.9-0.8-2.6C58.6,0.5,57.9,0.1,56.9,0.1z M57,6.1h-4.1V1.4H57c1.3,0,1.8,1.3,1.8,2.4C58.7,4.9,58.2,6.1,57,6.1z M68.7,0.1h-5.9c-0.8,0-1.5,0.7-1.5,1.5v4.2c0,0.8,0.7,1.5,1.5,1.5h5.9c0.8,0,1.5-0.7,1.5-1.5V1.7C70.3,0.8,69.6,0.1,68.7,0.1z M69,5.9c0,0.2-0.1,0.3-0.3,0.3h-5.8c-0.2,0-0.3-0.1-0.3-0.3V1.7c0-0.2,0.1-0.3,0.3-0.3h5.8c0.2,0,0.3,0.1,0.3,0.3V5.9z"/>
+                <path fill="#CE181E" d="M84.8,7.1c0,0,4.3-0.7,4.3-3.4c0-2.6-4.6-3.7-9.5-3.7c-4.4,0-7.3,0.5-7.3,0.5v2.4c2-0.5,3.9-0.9,6.5-0.9c2.8,0,4.9,0.8,4.9,2c0,1.4-2.1,2.2-6.7,2.2H75v2.2h2c4.8,0,7.5,0.7,7.5,2.5c0,1.6-2.4,2.5-5.5,2.5c-2.7,0-5.1-0.6-7-1.1v2.6c1,0.2,3.5,0.7,8.1,0.7c5.2,0,9.7-1.7,9.7-4.6C89.8,8.5,86.6,7.1,84.8,7.1"/>
+              </g>
+            </svg>
+          </div>
+
+          <!-- Physical Box Art Banner for Nintendo Wii (Top white curved banner) -->
+          <div v-else-if="isWii(item.platform)" class="box-art-header header-wii" title="Nintendo Wii">
+            <svg class="wii-header-bg-svg" viewBox="0 0 200 52" preserveAspectRatio="none">
+              <!-- Official Wii curved header shape: flat bottom y=40 from x=165 to 200 -->
+              <path fill="#ffffff" d="M 0 0 L 200 0 L 200 50 L 162 50 C 132 46 148 8 73 8 L 0 8 Z" />
+              <!-- Bottom curved separator line (only tracing the bottom edge) -->
+              <path fill="none" stroke="#d1d5db" stroke-width="1.2" d="M 0 0 L 200 0 L 200 50 L 162 50 C 132 46 148 8 73 8 L 0 8 Z" />
+            </svg>
+            <svg class="wii-banner-logo" viewBox="0 0 204.4 89.9">
+              <g>
+                <path fill="#8C8C8C" d="M129.6,10.2c0,5.6,4.8,10.2,10.6,10.2c6.1,0,10.8-4.5,10.8-10.2c0-5.7-4.8-10.2-10.8-10.2C134.4,0,129.6,4.6,129.6,10.2"/>
+                <rect x="131.4" y="30.7" fill="#8C8C8C" width="18.1" height="58.5"/>
+                <path fill="#8C8C8C" d="M166.4,10.2c0,5.6,4.8,10.2,10.6,10.2c6.1,0,10.8-4.5,10.8-10.2C187.8,4.5,183.1,0,177,0C171.2,0,166.4,4.6,166.4,10.2"/>
+                <rect x="168.2" y="30.7" fill="#8C8C8C" width="18.1" height="58.5"/>
+                <path fill="#8C8C8C" d="M102.6,4.9L86.8,67.1c0,0-12.1-46.7-14.1-53.3c-2-6.6-6-9.5-11.8-9.5c-5.8,0-9.8,2.9-11.8,9.5C47.1,20.4,35,67.1,35,67.1L19.1,4.9H0c0,0,18.3,66.3,20.8,74c1.9,6,6.5,10.9,13.4,10.9c7.8,0,11.4-5.7,13.1-10.9c1.7-5.2,13.6-49,13.6-49s11.9,43.8,13.6,49c1.7,5.2,5.3,10.9,13.1,10.9c6.8,0,11.4-4.9,13.4-10.9c2.5-7.7,20.8-74,20.8-74H102.6z"/>
+                <path fill="#8C8C8C" d="M194.9,83.5H193v-0.7h4.6v0.7h-1.9v5.7h-0.8V83.5z"/>
+                <path fill="#8C8C8C" d="M203.4,86.4c0-0.9-0.1-2-0.1-2.8h0c-0.2,0.7-0.5,1.6-0.8,2.4l-1.1,3.1h-0.6l-1-3.1c-0.3-0.9-0.5-1.7-0.7-2.5h0c0,0.8-0.1,1.9-0.1,2.8l-0.2,2.8h-0.8l0.4-6.4h1l1.1,3.1c0.3,0.8,0.5,1.5,0.6,2.2h0c0.2-0.6,0.4-1.4,0.7-2.2l1.1-3.1h1l0.4,6.4h-0.8L203.4,86.4z"/>
+              </g>
+            </svg>
+          </div>
+
           <img
             v-if="item.game.cover_url"
             :src="item.game.cover_url"
@@ -274,6 +351,43 @@ const statusTabs = [
   { value: 'Abandonado', label: 'Abandonados', icon: '❌' },
   { value: 'Prestado', label: 'Prestados', icon: '🤝' },
 ];
+
+function isSwitch2(platformKey?: string | null): boolean {
+  if (!platformKey) return false;
+  const label = formatPlatformLabel(platformKey).toLowerCase();
+  const raw = platformKey.toLowerCase();
+  return label.includes('switch 2') || raw.includes('switch 2') || raw === 'switch-2' || raw === 'ns2';
+}
+
+function isSwitch1(platformKey?: string | null): boolean {
+  if (!platformKey) return false;
+  if (isSwitch2(platformKey)) return false;
+  const label = formatPlatformLabel(platformKey).toLowerCase();
+  const raw = platformKey.toLowerCase();
+  return label.includes('switch') || raw.includes('switch');
+}
+
+function is3DS(platformKey?: string | null): boolean {
+  if (!platformKey) return false;
+  const label = formatPlatformLabel(platformKey).toLowerCase();
+  const raw = platformKey.toLowerCase();
+  return label.includes('3ds') || raw.includes('3ds');
+}
+
+function isNDS(platformKey?: string | null): boolean {
+  if (!platformKey) return false;
+  if (is3DS(platformKey)) return false;
+  const label = formatPlatformLabel(platformKey).toLowerCase();
+  const raw = platformKey.toLowerCase();
+  return label.includes('ds') || raw === 'nds' || raw.includes('game boy') || raw.includes('gameboy');
+}
+
+function isWii(platformKey?: string | null): boolean {
+  if (!platformKey) return false;
+  const label = formatPlatformLabel(platformKey).toLowerCase();
+  const raw = platformKey.toLowerCase();
+  return label.includes('wii') || raw.includes('wii');
+}
 
 function statusCss(status: string): string {
   const map: Record<string, string> = {
@@ -865,8 +979,158 @@ onUnmounted(() => {
 
 .card-badge {
   position: absolute;
-  top: 0.5rem;
+  bottom: 0.5rem;
   left: 0.5rem;
+  z-index: 12 !important;
+}
+
+/* ─── Physical Box Art Cover Modifiers ─── */
+.has-switch2-banner {
+  padding-top: 32px;
+  background: #000;
+}
+
+.has-wii-banner {
+  padding-top: 0;
+  background: #ffffff;
+}
+
+.has-nds-spine {
+  padding-left: 28px;
+  background: #ffffff;
+}
+
+.has-3ds-spine {
+  padding-right: 28px;
+  background: #ffffff;
+}
+
+/* ─── Box Art Corner Badge for Nintendo Switch 1 ─── */
+.box-art-header.header-switch1 {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 44px;
+  height: 44px;
+  z-index: 6;
+  box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.4);
+  border-bottom-right-radius: 6px;
+  overflow: hidden;
+  user-select: none;
+}
+
+.ns1-badge-logo-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* ─── Box Art Header for Nintendo Switch 2 ─── */
+.box-art-header.header-switch2 {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 32px;
+  background: #e60012;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px 8px;
+  z-index: 6;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  user-select: none;
+}
+
+.ns2-banner-logo-svg {
+  height: 22px;
+  width: auto;
+  max-width: 90%;
+  display: block;
+}
+
+/* ─── Box Art Side-Bar for Nintendo DS (Left vertical white stripe) ─── */
+.box-art-header.header-ds {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 28px;
+  background: #ffffff;
+  border-right: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 6;
+  overflow: hidden;
+  user-select: none;
+}
+
+.nds-spine-logo {
+  width: 140px;
+  height: 20px;
+  flex-shrink: 0;
+  transform: rotate(-90deg);
+  transform-origin: center center;
+  z-index: 7;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.15));
+}
+
+/* ─── Box Art Side-Bar for Nintendo 3DS (Right vertical white stripe) ─── */
+.box-art-header.header-3ds {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: 28px;
+  background: #ffffff;
+  border-left: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 6;
+  overflow: hidden;
+  user-select: none;
+}
+
+.n3ds-spine-logo {
+  width: 140px;
+  height: 20px;
+  flex-shrink: 0;
+  transform: rotate(90deg);
+  transform-origin: center center;
+  z-index: 7;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.1));
+}
+
+/* ─── Box Art Banner for Nintendo Wii (Top white curved banner) ─── */
+.box-art-header.header-wii {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 52px;
+  z-index: 6;
+  pointer-events: none;
+  user-select: none;
+}
+
+.wii-header-bg-svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.wii-banner-logo {
+  position: absolute;
+  top: 12px;
+  right: 8px;
+  height: 22px;
+  width: auto;
+  z-index: 7;
 }
 
 .card-info {
@@ -983,7 +1247,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 0.25rem;
-  z-index: 2;
+  z-index: 12 !important;
 }
 
 /* Scroll Sentinel & Loading More */
