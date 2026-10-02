@@ -61,6 +61,7 @@ describe('LibraryGrid.vue', () => {
 
   beforeEach(() => {
     localStorage.setItem('libraryItems', JSON.stringify(mockItems));
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
   });
 
   const mountGrid = () => {

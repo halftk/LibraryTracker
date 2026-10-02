@@ -607,6 +607,13 @@ async function loadItems() {
 }
 
 async function deleteItem(id: string) {
+  const item = items.value.find(i => i.id === id);
+  const title = item?.game?.title ? `"${item.game.title}"` : 'este juego';
+  if (typeof window !== 'undefined' && window.confirm) {
+    if (!window.confirm(`¿Estás seguro de que deseas eliminar ${title} de tu biblioteca?`)) {
+      return;
+    }
+  }
   try {
     if (currentUser.value) {
       await deleteLibraryItemFromDB(id);

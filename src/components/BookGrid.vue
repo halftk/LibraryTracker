@@ -418,6 +418,13 @@ async function loadItems() {
 }
 
 async function deleteItem(id: string) {
+  const item = items.value.find(i => i.id === id);
+  const title = item?.book?.title ? `"${item.book.title}"` : 'este libro';
+  if (typeof window !== 'undefined' && window.confirm) {
+    if (!window.confirm(`¿Estás seguro de que deseas eliminar ${title} de tu biblioteca de libros?`)) {
+      return;
+    }
+  }
   try {
     if (currentUser.value) {
       await deleteBookLibraryItemFromDB(id);
