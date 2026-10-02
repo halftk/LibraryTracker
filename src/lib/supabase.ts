@@ -201,3 +201,182 @@ export async function updateLibraryItemInDB(
   if (error) throw error;
   return data;
 }
+
+// ── BOOKS & BOOK LIBRARY ITEMS HELPERS ─────────────────────────────────
+
+export interface DBBook {
+  id: string; // Google Books Volume ID
+  title: string;
+  authors: string[];
+  cover_url: string | null;
+  published_year: number | null;
+  publisher: string | null;
+  page_count: number | null;
+  categories: string[];
+  isbn: string | null;
+  description: string | null;
+}
+
+export interface DBBookLibraryItem {
+  id: string;
+  user_id: string;
+  book_id: string;
+  format: string; // 'Físico', 'Ebook', 'Audiolibro'
+  status: 'Pendiente' | 'Leyendo' | 'Leído' | 'Abandonado' | 'Prestado';
+  start_date: string | null;
+  finish_date: string | null;
+  current_page: number;
+  total_pages: number;
+  rating: number | null;
+  notes: string | null;
+  lent_to: string | null;
+  created_at: string;
+  updated_at: string;
+  book?: DBBook;
+}
+
+export async function upsertBookSnapshot(book: DBBook) {
+  const { data, error } = await supabase
+    .from('books')
+    .upsert({
+      id: book.id,
+      title: book.title,
+      authors: book.authors,
+      cover_url: book.cover_url,
+      published_year: book.published_year,
+      publisher: book.publisher,
+      page_count: book.page_count,
+      categories: book.categories,
+      isbn: book.isbn,
+      description: book.description,
+    })
+    .select();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function getBookLibraryItems(userId: string): Promise<DBBookLibraryItem[]> {
+  const { data, error } = await supabase
+    .from('book_library_items')
+    .select(`
+      *,
+      book:books (*)
+    `)
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return data as DBBookLibraryItem[];
+}
+
+export async function addBookLibraryItemToDB(
+  userId: string,
+  book: DBBook,
+  itemData: {
+    format: string;
+    status: 'Pendiente' | 'Leyendo' | 'Leído' | 'Abandonado' | 'Prestado';
+    start_date: string | null;
+    finish_date: string | null;
+    current_page: number;
+    total_pages: number;
+    rating: number | null;
+    notes: string | null;
+    lent_to: string | null;
+  }
+) {
+  try {
+    await upsertBookSnapshot(book);
+  } catch (err) {
+    console.warn('⚠️ No se pudo guardar la instantánea del libro en public.books:', err);
+  }
+
+  const { data, error } = await supabase
+    .from('book_library_items')
+    .insert({
+      user_id: userId,
+      book_id: book.id,
+      format: itemData.format,
+      status: itemData.status,
+      start_date: itemData.start_date,
+      finish_date: itemData.finish_date,
+      current_page: itemData.current_page,
+      total_pages: itemData.total_pages,
+      rating: itemData.rating,
+      notes: itemData.notes,
+      lent_to: itemData.lent_to,
+    })
+    .select(`
+      *,
+      book:books (*)
+    `)
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function updateBookLibraryItemInDB(
+  id: string,
+  itemData: {
+    book_id?: string;
+    format: string;
+    status: 'Pendiente' | 'Leyendo' | 'Leído' | 'Abandonado' | 'Prestado';
+    start_date: string | null;
+    finish_date: string | null;
+    current_page: number;
+    total_pages: number;
+    rating: number | null;
+    notes: string | null;
+    lent_to: string | null;
+  },
+  book?: DBBook
+) {
+  if (book) {
+    try {
+      await upsertBookSnapshot(book);
+    } catch (err) {
+      console.warn('⚠️ No se pudo guardar la instantánea del libro:', err);
+    }
+  }
+
+  const payload: any = {
+    ...itemData,
+    updated_at: new Date().toISOString(),
+  };
+  if (book) {
+    payload.book_id = book.id;
+  }
+
+  const { data, error } = await supabase
+    .from('book_library_items')
+    .update(payload)
+    .eq('id', id)
+    .select(`
+      *,
+      book:books (*)
+    `)
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function deleteBookLibraryItemFromDB(id: string) {
+  const { error } = await supabase
+    .from('book_library_items')
+    .delete()
+    .eq('id', id);
+
+  if (error) throw error;
+}
+
+export async function clearUserBookLibraryInDB(userId: string) {
+  const { error } = await supabase
+    .from('book_library_items')
+    .delete()
+    .eq('user_id', userId);
+
+  if (error) throw error;
+}
+

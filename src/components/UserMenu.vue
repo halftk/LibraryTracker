@@ -1,15 +1,16 @@
 <template>
   <div class="auth-menu">
-    <!-- Botón Añadir Juego (Header) -->
+    <!-- Botón Añadir Juego / Libro (Header) -->
     <button
       v-if="user"
       class="btn-add-game-header"
-      @click="showAddGameSearchModal = true"
-      title="Buscar y añadir videojuego a la biblioteca"
+      @click="openAddHeaderModal"
+      :title="activeTab === 'books' ? 'Buscar y añadir libro a la biblioteca' : 'Buscar y añadir videojuego a la biblioteca'"
     >
       <span class="add-icon">➕</span>
-      <span class="add-text">Añadir juego</span>
+      <span class="add-text">{{ activeTab === 'books' ? 'Añadir libro' : 'Añadir juego' }}</span>
     </button>
+
 
     <!-- Botón circular de idioma -->
     <button
@@ -199,6 +200,32 @@
       </Transition>
     </Teleport>
 
+    <!-- Modal Añadir Libro (Header) -->
+    <Teleport to="body">
+      <Transition name="fade">
+        <div v-if="showAddBookSearchModal" class="search-modal-overlay" @click.self="showAddBookSearchModal = false">
+          <div class="search-modal-card">
+            <div class="search-modal-header">
+              <h3 class="search-modal-title">➕ Añadir libro a tu biblioteca</h3>
+              <button class="close-btn" @click="showAddBookSearchModal = false">✕</button>
+            </div>
+            <p class="search-modal-subtitle">Busca cualquier libro en Google Books para añadirlo a tu colección.</p>
+            <div class="search-modal-body">
+              <BookSearch @select-book="handleSelectBookFromHeader" @book-added="handleBookAddedFromHeader" />
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
+
+    <!-- Formulario Detalle Libro -->
+    <AddBookModal
+      v-if="selectedBookForAdd"
+      :book="selectedBookForAdd"
+      @close="selectedBookForAdd = null"
+      @added="handleBookAddedFromHeader"
+    />
+
     <!-- Formulario Detalle Juego -->
     <AddGameModal
       v-if="selectedGameForAdd"
@@ -223,12 +250,42 @@ import type { User } from '@supabase/supabase-js';
 import ImportExportModal from './ImportExportModal.vue';
 import GameSearch from './GameSearch.vue';
 import AddGameModal from './AddGameModal.vue';
+import BookSearch from './BookSearch.vue';
+import AddBookModal from './AddBookModal.vue';
 
 const user = ref<User | null>(null);
 const showModal = ref(false);
 const showImportExport = ref(false);
+const activeTab = ref<'games' | 'books'>('games');
 const showAddGameSearchModal = ref(false);
+const showAddBookSearchModal = ref(false);
 const selectedGameForAdd = ref<any>(null);
+const selectedBookForAdd = ref<any>(null);
+
+function openAddHeaderModal() {
+  if (activeTab.value === 'books') {
+    showAddBookSearchModal.value = true;
+  } else {
+    showAddGameSearchModal.value = true;
+  }
+}
+
+function handleSelectBookFromHeader(book: any) {
+  showAddBookSearchModal.value = false;
+  selectedBookForAdd.value = book;
+}
+
+function handleBookAddedFromHeader() {
+  selectedBookForAdd.value = null;
+  showAddBookSearchModal.value = false;
+  window.dispatchEvent(new CustomEvent('library-updated'));
+}
+
+function updateActiveTab(tab?: string) {
+  const current = tab || (typeof localStorage !== 'undefined' ? localStorage.getItem('library_active_tab') : 'games');
+  activeTab.value = current === 'books' ? 'books' : 'games';
+}
+
 const isLogin = ref(true);
 const loading = ref(false);
 const errorMsg = ref('');
@@ -388,21 +445,33 @@ function handleBeforeInstallPrompt(e: Event) {
   deferredPrompt.value = e;
 }
 
+function handleTabChange(e: any) {
+  if (e && e.detail) {
+    updateActiveTab(e.detail);
+  } else {
+    updateActiveTab();
+  }
+}
+
 onMounted(() => {
   initLang();
   checkUser();
+  updateActiveTab();
   supabase.auth.onAuthStateChange((_event, session) => {
     user.value = session?.user ?? null;
   });
   document.addEventListener('click', handleClickOutside);
   window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+  window.addEventListener('active-tab-changed', handleTabChange);
 });
 
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside);
   window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+  window.removeEventListener('active-tab-changed', handleTabChange);
 });
 </script>
+
 
 <style scoped>
 .auth-menu {

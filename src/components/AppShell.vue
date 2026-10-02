@@ -92,18 +92,49 @@
 
     <!-- ── ESTADO: Con sesión → App completa ────────────────── -->
     <template v-else>
-      <!-- Stats -->
-      <section class="section">
-        <StatsDashboard ref="statsRef" />
-      </section>
+      <!-- Selector Global: Videojuegos | Libros -->
+      <div class="mode-tabs-container">
+        <button
+          :class="['mode-tab', { active: activeTab === 'games' }]"
+          @click="setTab('games')"
+        >
+          <span>🎮</span> Videojuegos
+        </button>
+        <button
+          :class="['mode-tab', { active: activeTab === 'books' }]"
+          @click="setTab('books')"
+        >
+          <span>📚</span> Libros
+        </button>
+      </div>
 
-      <div class="divider"></div>
+      <!-- Sección Videojuegos -->
+      <template v-if="activeTab === 'games'">
+        <section class="section">
+          <StatsDashboard ref="statsRef" />
+        </section>
 
-      <!-- Library -->
-      <section class="section">
-        <h2 class="section-title"><span>📚</span> Mi Biblioteca</h2>
-        <LibraryGrid ref="gridRef" />
-      </section>
+        <div class="divider"></div>
+
+        <section class="section">
+          <h2 class="section-title"><span>🎮</span> Mi Biblioteca de Videojuegos</h2>
+          <LibraryGrid ref="gridRef" />
+        </section>
+      </template>
+
+      <!-- Sección Libros -->
+      <template v-else>
+        <section class="section">
+          <BookStatsDashboard ref="bookStatsRef" />
+        </section>
+
+        <div class="divider"></div>
+
+        <section class="section">
+          <h2 class="section-title"><span>📚</span> Mi Biblioteca de Libros</h2>
+          <BookGrid ref="bookGridRef" />
+        </section>
+      </template>
     </template>
 
     <!-- Toast de actualización de versión disponible -->
@@ -123,6 +154,8 @@ import { supabase } from '../lib/supabase';
 import type { User } from '@supabase/supabase-js';
 import LibraryGrid from './LibraryGrid.vue';
 import StatsDashboard from './StatsDashboard.vue';
+import BookGrid from './BookGrid.vue';
+import BookStatsDashboard from './BookStatsDashboard.vue';
 import ScrollToTop from './ScrollToTop.vue';
 
 const user = ref<User | null>(null);
@@ -132,8 +165,22 @@ const loading = ref(false);
 const errorMsg = ref('');
 const registrationSuccess = ref(false);
 
+const activeTab = ref<'games' | 'books'>('games');
+
+function setTab(tab: 'games' | 'books') {
+  activeTab.value = tab;
+  if (typeof localStorage !== 'undefined') {
+    localStorage.setItem('library_active_tab', tab);
+    window.dispatchEvent(new CustomEvent('active-tab-changed', { detail: tab }));
+  }
+}
+
+
 const gridRef = ref<any>(null);
 const statsRef = ref<any>(null);
+const bookGridRef = ref<any>(null);
+const bookStatsRef = ref<any>(null);
+
 
 const form = ref({ username: '', email: '', password: '' });
 
@@ -554,6 +601,49 @@ watchEffect(() => {
   align-items: center;
   gap: 0.5rem;
 }
+
+.mode-tabs-container {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  background: var(--color-bg-secondary);
+  padding: 0.375rem;
+  border-radius: 9999px;
+  border: 1px solid var(--color-border);
+  max-width: 320px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.mode-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.55rem 1.25rem;
+  border-radius: 9999px;
+  border: none;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  font-family: var(--font-family-base);
+}
+
+.mode-tab:hover {
+  color: var(--color-text-primary);
+}
+
+.mode-tab.active {
+  background: var(--color-accent-primary);
+  color: white;
+  box-shadow: 0 4px 12px rgba(109, 40, 217, 0.3);
+}
+
 
 .update-toast {
   position: fixed;
