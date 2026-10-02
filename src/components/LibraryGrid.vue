@@ -114,7 +114,7 @@
       <div
         v-for="item in displayedItems"
         :key="item.id"
-        :class="['game-card', { 'is-masterpiece': item.rating === 5 }]"
+        :class="['card', 'game-card', { 'is-masterpiece': item.rating === 5 }]"
       >
         <!-- Cover -->
         <div
@@ -693,7 +693,7 @@ function getRunBadgeInfo(item: LibraryItem): { badgeText: string; totalCount: nu
   if (index === -1) return null;
 
   return {
-    badgeText: `${index + 1}ª Partida`,
+    badgeText: `${index + 1}ª`,
     totalCount: sameGameItems.length,
   };
 }
@@ -931,11 +931,13 @@ onUnmounted(() => {
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  border-radius: 12px;
 }
 
 /* ── Reborde dorado para juegos de 5 estrellas (Excelente / Masterpiece) ── */
 .game-card.is-masterpiece {
   border: 1px solid rgba(251, 191, 36, 0.45) !important;
+  border-radius: 12px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), 0 0 16px rgba(245, 158, 11, 0.18);
   transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
