@@ -31,7 +31,7 @@ export async function searchGoogleBooks(
 
   // Fallback to Open Library API
   try {
-    return await fetchFromOpenLibrary(cleanQuery, limit);
+    return await fetchFromOpenLibrary(cleanQuery, limit, lang);
   } catch (err) {
     console.error('❌ Open Library API search failed as well:', err);
     return [];
@@ -40,18 +40,19 @@ export async function searchGoogleBooks(
 
 async function fetchFromGoogleBooks(query: string, limit: number, lang: string): Promise<GoogleBook[]> {
   const apiKey = import.meta.env.GOOGLE_BOOKS_API_KEY || process.env.GOOGLE_BOOKS_API_KEY || '';
-  const langRestrict = lang === 'es' ? '&langRestrict=es' : '';
+  const langCode = lang === 'es' ? 'es' : lang;
+  const langParams = `&langRestrict=${langCode}&hl=${langCode}`;
 
-  let url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=${limit}${langRestrict}`;
+  let url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=${limit}${langParams}`;
   if (apiKey) {
     url += `&key=${apiKey}`;
   }
 
   let res = await fetch(url);
 
-  // Fallback: If using API key returns 400/403/401, try without key
+  // Fallback: If using API key returns 400/403/401/429, try without key
   if (!res.ok && apiKey) {
-    const fallbackUrl = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=${limit}${langRestrict}`;
+    const fallbackUrl = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=${limit}${langParams}`;
     res = await fetch(fallbackUrl);
   }
 
@@ -106,14 +107,23 @@ async function fetchFromGoogleBooks(query: string, limit: number, lang: string):
   });
 }
 
-async function fetchFromOpenLibrary(query: string, limit: number): Promise<GoogleBook[]> {
-  const url = `https://openlibrary.org/search.json?q=${encodeURIComponent(query)}&limit=${limit}`;
-  const res = await fetch(url);
+async function fetchFromOpenLibrary(query: string, limit: number, lang: string = 'es'): Promise<GoogleBook[]> {
+  const openLibLang = lang === 'es' ? '&language=spa' : '';
+  const url = `https://openlibrary.org/search.json?q=${encodeURIComponent(query)}&limit=${limit}${openLibLang}`;
+  let res = await fetch(url);
   if (!res.ok) {
     throw new Error(`Open Library API HTTP ${res.status}`);
   }
 
-  const data = await res.json();
+  let data = await res.json();
+  if ((!data.docs || data.docs.length === 0) && openLibLang) {
+    const fallbackUrl = `https://openlibrary.org/search.json?q=${encodeURIComponent(query)}&limit=${limit}`;
+    const fallbackRes = await fetch(fallbackUrl);
+    if (fallbackRes.ok) {
+      data = await fallbackRes.json();
+    }
+  }
+
   if (!data.docs || !Array.isArray(data.docs)) {
     return [];
   }
